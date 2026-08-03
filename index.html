@@ -3,20 +3,18 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+<meta http-equiv="X-Frame-Options" content="DENY" />
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src https://almizalla-tracker-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com; img-src 'self' data: blob:;" />
 <title>جدول متابعة إنتاج الأفكار — مظلة معتقلي مصر</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-
-<!-- ============================================================
-     إعدادات Firebase — بيانات مشروع almizalla-tracker
-     ============================================================ -->
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
   const firebaseConfig = {
     apiKey: "AIzaSyBqhrG9pt8OVnkNY-5Ybc_AQEchOPCVK2g",
     authDomain: "almizalla-tracker.firebaseapp.com",
@@ -26,321 +24,236 @@
     messagingSenderId: "601466288422",
     appId: "1:601466288422:web:c2c783519a936d5c8e29e7"
   };
-
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
   const auth = getAuth(app);
-
-  window.__fb = { ref, onValue, set, update, remove, db, auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+  window.__fb = { ref, onValue, set, update, db, auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
   window.dispatchEvent(new Event("firebase-ready"));
 </script>
-
 <style>
-  :root{
-    --bg:#15171c; --panel:#1b1e26; --panel2:#1e2129; --border:#262a33;
-    --text:#e5e7eb; --muted:#9ca3af; --dim:#6b7280; --faint:#4b5563;
-    --accent:#c98a3e; --accent2:#e0a85e; --danger:#ef4444; --danger-bg:#3b1d1d;
-    --shadow: 0 6px 20px rgba(0,0,0,.28);
-    --radius: 14px;
-  }
-  html[data-theme="light"]{
-    --bg:#f4f5f7; --panel:#ffffff; --panel2:#f8f9fb; --border:#e5e7eb;
-    --text:#1f2430; --muted:#6b7280; --dim:#8b93a1; --faint:#9aa1ad;
-    --accent:#b9782e; --accent2:#c98a3e;
-    --shadow: 0 6px 20px rgba(20,20,30,.08);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-    font-family:'Tajawal', Tahoma, Geneva, Arial, sans-serif;
-    transition:background .2s, color .2s;}
-  a{color:inherit;}
-  button, select, input, textarea { font-family:'Tajawal', Tahoma, Arial, sans-serif; }
-  ::selection{background:var(--accent);color:#1b1204;}
-
-  body.locked-select{ -webkit-user-select:none; user-select:none; }
-  body.locked-select input, body.locked-select textarea{ -webkit-user-select:text; user-select:text; }
-
-  .wrap{max-width:1040px;margin:0 auto;padding:0 20px;}
-
-  header.top{
-    background:linear-gradient(180deg, var(--panel) 0%, var(--bg) 100%);
-    border-bottom:1px solid var(--border);
-    padding:28px 0 22px; position:sticky; top:0; z-index:20;
-  }
-  .top-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-  .eyebrow{font-size:12px;letter-spacing:1px;color:var(--accent);font-weight:700;margin-bottom:4px;}
-  h1{font-size:22px;font-weight:800;margin:0;color:var(--text);}
-  .pct-box{text-align:left;}
-  .pct{font-size:28px;font-weight:800;color:var(--text);line-height:1;}
-  .pct-label{font-size:11px;color:var(--muted);}
-
-  .progress-bar{margin-top:16px;height:8px;border-radius:8px;overflow:hidden;display:flex;background:var(--border);}
-  .progress-seg{transition:width .3s;}
-
-  .legend{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
-  .chip{display:flex;align-items:center;gap:6px;background:var(--panel);
-    border:1px solid var(--border);border-radius:20px;padding:6px 12px;cursor:pointer;
-    color:var(--muted);font-size:12.5px;font-weight:600;transition:all .15s;}
-  .chip:hover{border-color:var(--accent);}
-  .chip .n{opacity:.7;font-weight:700;}
-  .clear-filter{font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;}
-
-  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center;}
-  .search-box{position:relative;flex:1 1 220px;}
-  .search-box svg{position:absolute;right:12px;top:11px;color:var(--dim);}
-  .search-box input{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:10px;
-    padding:9px 38px 9px 12px;color:var(--text);font-size:13.5px;outline:none;}
-  select{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 12px;
-    color:var(--text);font-size:13px;outline:none;cursor:pointer;min-width:150px;}
-  .result-count{font-size:12.5px;color:var(--dim);align-self:center;margin-right:4px;}
-
-  .icon-btn{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-    width:36px;height:36px;display:flex;align-items:center;justify-content:center;
-    cursor:pointer;color:var(--muted);transition:all .15s;}
-  .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
-
-  .save-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
-    border-radius:8px;padding:8px 12px;font-size:12.5px;display:none;}
-
-  .conn-status{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px;margin-top:10px;}
-  .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);}
-  .dot.ok{background:#22c55e;}
-  .dot.bad{background:#ef4444;}
-
-  main{margin-top:18px;padding-bottom:60px;}
-  .cat-group{margin-bottom:22px;}
-  .cat-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px;
-    display:flex;align-items:center;gap:8px;}
-  .cat-title .bar{width:3px;height:14px;background:var(--accent);border-radius:2px;}
-  .cat-title .count{color:var(--faint);font-weight:500;}
-
-  .items{display:flex;flex-direction:column;gap:8px;}
-  .item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-    padding:12px 14px;transition:border-color .15s, box-shadow .15s;}
-  .item:hover{box-shadow:var(--shadow);}
-  .item.selected{border-color:var(--accent);}
-  .item-row{display:flex;gap:10px;align-items:flex-start;}
-  .item-checkbox{margin-top:3px;width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;}
-  .item-id{font-size:11px;color:var(--faint);font-weight:700;min-width:24px;padding-top:2px;}
-  .item-body{flex:1;min-width:0;}
-  .item-idea{font-size:13.5px;line-height:1.65;color:var(--text);}
-  .item-meta{display:flex;gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap;}
-  .fmt-tag{font-size:10.5px;color:var(--muted);background:var(--panel2);border:1px solid var(--border);border-radius:6px;
-    padding:2px 8px;font-weight:600;}
-  .saving-tag{font-size:10.5px;color:var(--dim);}
-  .notes-toggle, .script-toggle, .edit-toggle, .delete-toggle{font-size:10.5px;color:var(--faint);background:none;border:none;cursor:pointer;
-    padding:0;text-decoration:underline;}
-  .notes-toggle.has-note, .script-toggle.has-note{color:var(--accent);}
-  .delete-toggle{color:#f87171;}
-  textarea.notes, textarea.script{width:100%;margin-top:8px;background:var(--panel2);border:1px solid var(--border);
-    border-radius:10px;color:var(--text);font-size:12.5px;padding:9px;min-height:60px;
-    resize:vertical;outline:none;display:none;font-family:inherit;}
-  textarea.script{border-color:var(--accent);min-height:90px;}
-  textarea.notes.open, textarea.script.open{display:block;}
-
-  .status-col{display:flex;flex-direction:column;gap:4px;min-width:132px;}
-  .status-btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;
-    background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 8px;
-    cursor:pointer;color:var(--faint);font-size:11.5px;font-weight:500;transition:all .12s;}
-  .status-btn svg{flex-shrink:0;}
-  .status-btn.active{font-weight:700;}
-  .status-btn:hover{border-color:var(--border);}
-
-  .empty{text-align:center;color:var(--dim);padding:60px 0;font-size:14px;}
-  .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;}
-  footer{max-width:1040px;margin:30px auto 0;padding:0 20px 30px;font-size:11.5px;color:var(--faint);text-align:center;}
-
-  /* ===== زر تبديل الوضع الليلي/النهاري ===== */
-  #themeToggle{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-    padding:5px 10px;font-size:12px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:6px;}
-  #themeToggle:hover{border-color:var(--accent);color:var(--accent);}
-  .top-actions{display:flex;gap:8px;align-items:center;}
-
-  /* ===== نموذج إضافة/تعديل فكرة ===== */
-  #addIdeaBtn{background:linear-gradient(180deg,var(--accent2),var(--accent));border:none;border-radius:10px;padding:9px 16px;
-    color:#1b1204;font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--shadow);}
-  .idea-form{margin-top:14px;background:var(--panel);border:1px solid var(--border);
-    border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);}
-  .idea-form-title{font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:12px;}
-  .idea-form-label{display:block;font-size:11.5px;color:var(--muted);margin:10px 0 5px;}
-  .idea-form textarea, .idea-form select, .idea-form input{
-    width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:9px;
-    color:var(--text);font-size:13px;padding:9px 10px;outline:none;box-sizing:border-box;}
-  .idea-form textarea{min-height:70px;resize:vertical;font-family:inherit;}
-  .idea-form-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
-    border-radius:8px;padding:8px 12px;font-size:12.5px;}
-  .idea-form-actions{display:flex;gap:8px;margin-top:14px;}
-  .idea-form-submit{background:linear-gradient(180deg,var(--accent2),var(--accent));border:none;border-radius:9px;padding:9px 16px;
-    color:#1b1204;font-weight:700;font-size:13px;cursor:pointer;}
-  .idea-form-cancel{background:none;border:1px solid var(--border);border-radius:9px;padding:9px 16px;
-    color:var(--dim);font-size:13px;cursor:pointer;}
-
-  /* ===== شريط التعديل الجماعي ===== */
-  .bulk-bar{position:sticky;top:0;z-index:19;margin-top:10px;background:var(--panel);border:1px solid var(--accent);
-    border-radius:var(--radius);padding:12px 16px;display:none;box-shadow:var(--shadow);}
-  .bulk-bar.open{display:block;}
-  .bulk-bar-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-  .bulk-bar-count{font-size:12.5px;font-weight:700;color:var(--accent);}
-  .bulk-bar select{min-width:140px;}
-  .bulk-apply{background:linear-gradient(180deg,var(--accent2),var(--accent));border:none;border-radius:9px;padding:8px 14px;
-    color:#1b1204;font-weight:700;font-size:12.5px;cursor:pointer;}
-  .bulk-clear{background:none;border:1px solid var(--border);border-radius:9px;padding:8px 14px;
-    color:var(--dim);font-size:12.5px;cursor:pointer;}
-
-  @media (max-width:560px){
-    .item-row{flex-wrap:wrap;}
-    .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:6px;}
-  }
+:root {
+  --bg:#0b0d12; --panel:#14171f; --panel2:#1a1e27; --border:#252a36;
+  --text:#e8eaed; --muted:#9aa0a6; --dim:#5f6368; --faint:#3c4043;
+  --accent:#c98a3e; --accent-light:#e8a85c; --accent-glow:rgba(201,138,62,0.15);
+  --hover:#1e232d; --shadow:0 8px 32px rgba(0,0,0,0.45); --radius:16px;
+  --font:'Tajawal',Tahoma,sans-serif; --danger:#ef4444; --danger-hover:#dc2626; --success:#22c55e;
+}
+body.light-mode {
+  --bg:#f4f6f9; --panel:#ffffff; --panel2:#f8f9fb; --border:#e2e5ea;
+  --text:#1a1d23; --muted:#5f6368; --dim:#80868b; --faint:#bdc1c6;
+  --accent:#b0782e; --accent-light:#c98a3e; --accent-glow:rgba(201,138,62,0.1);
+  --hover:#eef0f4; --shadow:0 8px 32px rgba(0,0,0,0.1);
+  --danger:#dc2626; --danger-hover:#b91c1c; --success:#16a34a;
+}
+*{box-sizing:border-box;} html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--font);transition:background .35s,color .35s;} a{color:inherit;} button,select,input,textarea{font-family:inherit;}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px;}
+header.top{background:linear-gradient(180deg,var(--panel) 0%,var(--bg) 100%);border-bottom:1px solid var(--border);padding:32px 0 24px;position:sticky;top:0;z-index:20;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.top-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:14px;}
+.eyebrow{font-size:11px;letter-spacing:2px;color:var(--accent);font-weight:800;margin-bottom:6px;text-transform:uppercase;}
+h1{font-size:28px;font-weight:900;margin:0;color:var(--text);letter-spacing:-.5px;}
+.pct-box{text-align:left;} .pct{font-size:34px;font-weight:900;color:var(--text);line-height:1;} .pct-label{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500;}
+.progress-bar{margin-top:20px;height:10px;border-radius:8px;overflow:hidden;display:flex;background:var(--border);gap:2px;}
+.progress-seg{transition:width .5s cubic-bezier(.4,0,.2,1);border-radius:8px;}
+.legend{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.chip{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:24px;padding:6px 14px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,.05);}
+.chip:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--accent);}
+.chip .n{opacity:.8;font-weight:700;margin-right:4px;}
+.chip.active{font-weight:800;box-shadow:0 2px 12px rgba(0,0,0,.2);transform:translateY(-1px);}
+.clear-filter{font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;padding:6px 10px;font-weight:500;}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;align-items:center;}
+.search-box{position:relative;flex:1 1 260px;}
+.search-box svg{position:absolute;right:14px;top:12px;color:var(--dim);pointer-events:none;}
+.search-box input{width:100%;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:11px 42px 11px 14px;color:var(--text);font-size:14px;outline:none;transition:all .2s;}
+.search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow);}
+select{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:11px 14px;color:var(--text);font-size:13px;outline:none;cursor:pointer;min-width:160px;transition:all .2s;}
+select:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow);}
+.result-count{font-size:13px;color:var(--dim);align-self:center;margin-right:6px;font-weight:500;}
+.save-error{margin-top:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;border-radius:var(--radius);padding:10px 14px;font-size:13px;display:none;font-weight:500;}
+body.light-mode .save-error{color:#991b1b;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.15);}
+.conn-status{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px;margin-top:12px;font-weight:500;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block;}
+.dot.ok{background:var(--success);box-shadow:0 0 10px rgba(34,197,94,.5);}
+.dot.bad{background:var(--danger);box-shadow:0 0 10px rgba(239,68,68,.5);}
+main{margin-top:24px;padding-bottom:100px;}
+.cat-group{margin-bottom:32px;}
+.cat-title{font-size:14px;font-weight:900;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.cat-title .bar{width:4px;height:18px;background:var(--accent);border-radius:4px;}
+.cat-title .count{color:var(--faint);font-weight:600;}
+.items{display:flex;flex-direction:column;gap:12px;}
+.item{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.04);position:relative;}
+.item:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow);}
+.item.selected{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-glow),var(--shadow);}
+.item-row{display:flex;gap:14px;align-items:flex-start;}
+.item-select{display:flex;align-items:center;padding-top:2px;}
+.item-select input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;}
+.item-id{font-size:12px;color:var(--faint);font-weight:800;min-width:28px;padding-top:3px;}
+.item-body{flex:1;min-width:0;}
+.item-idea{font-size:15px;line-height:1.75;color:var(--text);font-weight:400;}
+.item-meta{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;}
+.fmt-tag{font-size:11px;color:var(--muted);background:var(--panel2);border-radius:6px;padding:3px 10px;font-weight:700;border:1px solid var(--border);}
+.saving-tag{font-size:11px;color:var(--accent);font-weight:700;}
+.notes-toggle,.script-toggle{font-size:11px;color:var(--faint);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-weight:500;transition:color .2s;}
+.notes-toggle:hover,.script-toggle:hover{color:var(--accent);}
+.notes-toggle.has-note,.script-toggle.has-script{color:var(--accent);font-weight:800;}
+textarea.notes,textarea.script{width:100%;margin-top:10px;background:var(--bg);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;padding:12px;min-height:70px;resize:vertical;outline:none;display:none;font-family:inherit;transition:border-color .2s,box-shadow .2s;}
+textarea.notes:focus,textarea.script:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+textarea.notes.open,textarea.script.open{display:block;}
+.status-col{display:flex;flex-direction:column;gap:5px;min-width:150px;}
+.status-btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 10px;cursor:pointer;color:var(--faint);font-size:12px;font-weight:500;transition:all .15s;}
+.status-btn svg{flex-shrink:0;}
+.status-btn:hover{background:var(--hover);}
+.status-btn.active{font-weight:800;}
+.item-actions{display:none;gap:6px;margin-top:10px;}
+.item-actions.visible{display:flex;}
+.item-actions button{font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);cursor:pointer;transition:all .15s;font-weight:600;}
+.item-actions button:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.item-actions button.delete:hover{background:var(--danger);border-color:var(--danger);}
+.bulk-bar{position:fixed;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--border);padding:16px 24px;display:none;align-items:center;justify-content:center;gap:16px;z-index:50;box-shadow:0 -8px 32px rgba(0,0,0,.25);}
+.bulk-bar.visible{display:flex;}
+.bulk-bar .bulk-info{font-weight:800;color:var(--text);font-size:14px;}
+.bulk-bar select{min-width:150px;font-size:13px;padding:9px 12px;}
+.bulk-bar button{background:var(--accent);color:#1b1204;border:none;border-radius:10px;padding:9px 24px;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;}
+.bulk-bar button:hover{background:var(--accent-light);transform:translateY(-1px);}
+.bulk-bar button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+.bulk-bar button.secondary:hover{background:var(--hover);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.visible{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:32px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);}
+.modal h3{margin:0 0 24px;font-size:20px;color:var(--text);font-weight:900;}
+.modal label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:700;margin-top:16px;}
+.modal input,.modal select,.modal textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:11px 14px;color:var(--text);font-size:14px;outline:none;margin-bottom:4px;transition:all .2s;}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow);}
+.modal textarea{min-height:120px;resize:vertical;}
+.modal-actions{display:flex;gap:10px;margin-top:24px;justify-content:flex-end;}
+.modal-actions button{padding:11px 24px;border-radius:12px;border:none;cursor:pointer;font-weight:800;font-size:13px;transition:all .2s;}
+.modal-actions .cancel{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+.modal-actions .cancel:hover{background:var(--hover);}
+.modal-actions .save{background:var(--accent);color:#1b1204;}
+.modal-actions .save:hover{background:var(--accent-light);transform:translateY(-1px);}
+.modal-actions .delete{background:var(--danger);color:#fff;}
+.modal-actions .delete:hover{background:var(--danger-hover);transform:translateY(-1px);}
+.add-btn{background:var(--accent);color:#1b1204;border:none;border-radius:12px;padding:11px 22px;font-weight:800;font-size:13px;cursor:pointer;margin-bottom:20px;transition:all .2s;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(201,138,62,.25);}
+.add-btn:hover{background:var(--accent-light);transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,138,62,.35);}
+.add-btn.hidden{display:none;}
+.theme-toggle{position:fixed;top:20px;left:20px;z-index:30;background:var(--panel);border:1px solid var(--border);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);font-size:20px;transition:all .2s;box-shadow:var(--shadow);}
+.theme-toggle:hover{transform:scale(1.1) rotate(15deg);border-color:var(--accent);}
+.empty{text-align:center;color:var(--dim);padding:100px 0;font-size:16px;font-weight:500;}
+.loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:16px;flex-direction:column;gap:14px;text-align:center;padding:0 20px;}
+footer{max-width:1100px;margin:40px auto 0;padding:0 24px 40px;font-size:12px;color:var(--faint);text-align:center;font-weight:500;}
+.owner-bar{display:none;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);}
+.owner-bar.visible{display:flex;}
+.owner-bar span{font-size:12px;color:var(--accent);font-weight:700;}
+@media (max-width:720px) {
+  .top-row{flex-direction:column;align-items:flex-start;} .pct-box{text-align:right;width:100%;}
+  .item-row{flex-wrap:wrap;} .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:12px;gap:4px;} .status-btn{flex:1;min-width:100px;justify-content:center;}
+  .bulk-bar{flex-wrap:wrap;padding:12px;gap:8px;} .bulk-bar select{min-width:100px;} .modal{padding:24px;}
+  .theme-toggle{top:10px;left:10px;width:38px;height:38px;font-size:16px;} h1{font-size:22px;}
+}
 </style>
 </head>
 <body>
-
-<div id="loading" class="loading" style="flex-direction:column;gap:10px;text-align:center;padding:0 20px;">
-  <div>...جارِ تحميل الجدول</div>
-  <div id="loadingHint" style="font-size:12px;color:var(--dim);max-width:380px;"></div>
+<button class="theme-toggle" id="themeToggle" title="تبديل الوضع">🌓</button>
+<div id="loading" class="loading" style="flex-direction:column;gap:12px;text-align:center;padding:0 20px;">
+  <div style="font-size:18px;font-weight:700;">...جارِ تحميل الجدول</div>
+  <div id="loadingHint" style="font-size:13px;color:var(--dim);max-width:400px;line-height:1.6;"></div>
 </div>
-
 <script>
-  // ماسك أخطاء مبكر: لو أي جزء من التحميل فشل (خصوصًا Firebase) هيظهر السبب هنا
   window.addEventListener("error", function(e){
     var hint = document.getElementById("loadingHint");
     if (hint && document.getElementById("loading").style.display !== "none") {
-      hint.textContent = "خطأ تقني: " + (e.message || "تعذّر تحميل أحد الملفات الخارجية (Firebase)") +
-        " — جرّب فتح الصفحة على بلوجر مباشرة بدل أداة المعاينة.";
+      hint.textContent = "خطأ تقني: " + (e.message || "تعذّر تحميل أحد الملفات الخارجية (Firebase)") + " — جرّب فتح الصفحة على بلوجر مباشرة.";
     }
   }, true);
-
-  // تطبيق الوضع (ليلي/نهاري) المحفوظ فورًا لمنع "الوميض"
-  (function(){
-    var saved = localStorage.getItem("almizalla-theme");
-    if (saved === "light") document.documentElement.setAttribute("data-theme","light");
-  })();
 </script>
-
 <div id="loginScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;">
-  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px 28px;max-width:340px;width:90%;box-shadow:var(--shadow);">
-    <div style="font-size:12px;letter-spacing:1px;color:var(--accent);font-weight:700;margin-bottom:6px;">مظلة معتقلي مصر</div>
-    <h2 style="margin:0 0 20px;font-size:18px;color:var(--text);">تسجيل الدخول للفريق الإعلامي</h2>
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;max-width:360px;width:90%;box-shadow:var(--shadow);">
+    <div style="font-size:12px;letter-spacing:1.5px;color:var(--accent);font-weight:800;margin-bottom:8px;">مظلة معتقلي مصر</div>
+    <h2 style="margin:0 0 24px;font-size:20px;color:var(--text);font-weight:900;">تسجيل الدخول للفريق الإعلامي</h2>
     <input id="loginEmail" type="email" placeholder="البريد الإلكتروني" autocomplete="username"
-      style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:13.5px;outline:none;margin-bottom:10px;box-sizing:border-box;" />
+      style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box;transition:all .2s;"
+      onfocus="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 4px var(--accent-glow)';"
+      onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none';" />
     <input id="loginPassword" type="password" placeholder="كلمة المرور" autocomplete="current-password"
-      style="width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);font-size:13.5px;outline:none;margin-bottom:14px;box-sizing:border-box;" />
+      style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;margin-bottom:18px;box-sizing:border-box;transition:all .2s;"
+      onfocus="this.style.borderColor='var(--accent)';this.style.boxShadow='0 0 0 4px var(--accent-glow)';"
+      onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none';" />
     <button id="loginBtn"
-      style="width:100%;background:linear-gradient(180deg,var(--accent2),var(--accent));border:none;border-radius:9px;padding:10px;color:#1b1204;font-weight:700;font-size:13.5px;cursor:pointer;">
-      دخول
-    </button>
-    <div id="loginError" style="display:none;margin-top:12px;font-size:12.5px;color:#fca5a5;"></div>
-    <div style="margin-top:16px;font-size:11px;color:var(--faint);">
-      لو معندكش حساب، اطلبه من مسؤول المظلة عن المشروع.
-    </div>
+      style="width:100%;background:var(--accent);border:none;border-radius:12px;padding:12px;color:#1b1204;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s;"
+      onmouseover="this.style.background='var(--accent-light)'" onmouseout="this.style.background='var(--accent)'">دخول</button>
+    <div id="loginError" style="display:none;margin-top:14px;font-size:13px;color:#fca5a5;font-weight:500;"></div>
+    <div style="margin-top:18px;font-size:12px;color:var(--faint);font-weight:500;">لو معندكش حساب، اطلبه من مسؤول المظلة عن المشروع.</div>
   </div>
 </div>
-
 <div id="app" style="display:none;">
-  <div class="wrap" style="padding-top:14px;display:flex;justify-content:flex-end;">
-    <div class="top-actions">
-      <button id="themeToggle" type="button"><span id="themeIcon">🌙</span><span id="themeLabel">الوضع الليلي</span></button>
-      <button id="logoutBtn" style="background:none;border:1px solid var(--border);color:var(--dim);
-        border-radius:10px;padding:6px 12px;font-size:11.5px;cursor:pointer;">تسجيل الخروج</button>
-    </div>
+  <div class="wrap" style="padding-top:16px;">
+    <button id="logoutBtn" style="float:left;background:none;border:1px solid var(--border);color:var(--dim);border-radius:10px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600;transition:all .2s;"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">تسجيل الخروج</button>
+    <div style="clear:both;"></div>
   </div>
   <header class="top">
     <div class="wrap">
       <div class="top-row">
-        <div>
-          <div class="eyebrow">مظلة معتقلي مصر · almizalla.org</div>
-          <h1>جدول متابعة إنتاج الأفكار</h1>
-        </div>
-        <div class="pct-box">
-          <div class="pct" id="pctVal">0%</div>
-          <div class="pct-label" id="pctLabel">منشور من 266 فكرة</div>
-        </div>
+        <div><div class="eyebrow">مظلة معتقلي مصر · almizalla.org</div><h1>جدول متابعة إنتاج الأفكار</h1></div>
+        <div class="pct-box"><div class="pct" id="pctVal">0%</div><div class="pct-label" id="pctLabel">منشور من 266 فكرة</div></div>
       </div>
-
       <div class="progress-bar" id="progressBar"></div>
       <div class="legend" id="legend"></div>
       <div class="conn-status" id="connStatus"><span class="dot"></span><span>جارِ الاتصال بقاعدة البيانات...</span></div>
     </div>
   </header>
-
   <div class="wrap">
+    <div class="owner-bar" id="ownerBar">
+      <span>👤 وضع المالك</span>
+      <button class="add-btn" id="addBtn" onclick="openAddModal()">+ إضافة فكرة جديدة</button>
+    </div>
     <div class="filters">
       <div class="search-box">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="searchInput" placeholder="ابحث في الأفكار أو المحاور..." />
       </div>
       <select id="catFilter"></select>
       <select id="fmtFilter"></select>
-      <button id="addIdeaBtn" type="button" style="display:none;">+ إضافة فكرة جديدة</button>
       <div class="result-count" id="resultCount"></div>
     </div>
     <div class="save-error" id="saveError">تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى.</div>
-
-    <div id="bulkBar" class="bulk-bar">
-      <div class="bulk-bar-row">
-        <span class="bulk-bar-count" id="bulkCount">0 فكرة محددة</span>
-        <select id="bulkStatusSelect"><option value="">بدون تغيير الحالة</option></select>
-        <select id="bulkCatSelect"><option value="">بدون تغيير المحور</option></select>
-        <select id="bulkFmtSelect"><option value="">بدون تغيير الصيغة</option></select>
-        <button id="bulkApplyBtn" type="button" class="bulk-apply">تطبيق على المحدد</button>
-        <button id="bulkClearBtn" type="button" class="bulk-clear">إلغاء التحديد</button>
-      </div>
-      <div id="bulkError" class="idea-form-error" style="display:none;margin-top:10px;"></div>
-    </div>
-
-    <div id="ideaForm" class="idea-form" style="display:none;">
-      <div class="idea-form-title" id="ideaFormTitle">إضافة فكرة جديدة</div>
-
-      <label class="idea-form-label">نص الفكرة</label>
-      <textarea id="ideaText" placeholder="اكتب تفاصيل الفكرة هنا..."></textarea>
-
-      <label class="idea-form-label">المحور / التصنيف</label>
-      <select id="ideaCatSelect"></select>
-      <input id="ideaCatInput" placeholder="اكتب اسم المحور الجديد..." style="display:none;" />
-
-      <label class="idea-form-label">الصيغة</label>
-      <select id="ideaFmtSelect"></select>
-      <input id="ideaFmtInput" placeholder="اكتب اسم الصيغة الجديدة..." style="display:none;" />
-
-      <div id="ideaFormError" class="idea-form-error" style="display:none;"></div>
-
-      <div class="idea-form-actions">
-        <button id="ideaSubmitBtn" type="button" class="idea-form-submit">إضافة الفكرة</button>
-        <button id="ideaCancelBtn" type="button" class="idea-form-cancel">إلغاء</button>
-      </div>
+  </div>
+  <main class="wrap" id="mainList"></main>
+  <footer>التحديثات تُحفظ تلقائيًا وتظهر لحظيًا لكل من يفتح هذه الصفحة.</footer>
+</div>
+<div class="bulk-bar" id="bulkBar">
+  <div class="bulk-info" id="bulkInfo">تم تحديد 0 فكرة</div>
+  <select id="bulkStatus"><option value="">تغيير الحالة...</option></select>
+  <select id="bulkCat"><option value="">تغيير المحور...</option></select>
+  <select id="bulkFmt"><option value="">تغيير الصيغة...</option></select>
+  <button onclick="applyBulkEdit()">تطبيق</button>
+  <button class="secondary" onclick="clearSelection()">إلغاء التحديد</button>
+</div>
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <h3 id="modalTitle">إضافة فكرة جديدة</h3>
+    <input type="hidden" id="modalId" />
+    <label>المحور</label><select id="modalCat"></select>
+    <label>الصيغة</label><select id="modalFmt"></select>
+    <label>الفكرة</label><textarea id="modalIdea" placeholder="اكتب الفكرة هنا..."></textarea>
+    <div class="modal-actions">
+      <button class="cancel" onclick="closeModal()">إلغاء</button>
+      <button class="delete" id="modalDeleteBtn" onclick="deleteItem()" style="display:none;">حذف</button>
+      <button class="save" onclick="saveModal()">حفظ</button>
     </div>
   </div>
-
-  <main class="wrap" id="mainList"></main>
-
-  <footer>
-    التحديثات تُحفظ تلقائيًا وتظهر لحظيًا لكل من يفتح هذه الصفحة.
-  </footer>
 </div>
-
 <script>
-const OWNER_EMAIL = "fedaalhaq@gmail.com";
-
 const STATUSES = ["لم تُنتج", "قيد الكتابة", "قيد الانتاج", "تم الانتاج", "تم النشر", "فكرة عليها تحفظ"];
-
 const STATUS_META = {
-  "لم تُنتج":     { color:"#9ca3af", bg:"#f3f4f6", short:"لم تُنتج",
-    icon:'<circle cx="12" cy="12" r="9"/>' },
-  "قيد الكتابة":   { color:"#d99a4e", bg:"#fef3c7", short:"كتابة",
-    icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
-  "قيد الانتاج": { color:"#a78bfa", bg:"#ede9fe", short:"قيد الانتاج",
-    icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
-  "تم الانتاج":    { color:"#67e8f9", bg:"#cffafe", short:"تم الانتاج",
-    icon:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
-  "تم النشر":      { color:"#4ade80", bg:"#dcfce7", short:"منشورة",
-    icon:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' },
-  "فكرة عليها تحفظ": { color:"#f87171", bg:"#fee2e2", short:"عليها تحفظ",
-    icon:'<path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>' },
+  "لم تُنتج":     { color:"#9ca3af", bg:"#f3f4f6", short:"لم تُنتج", icon:'<circle cx="12" cy="12" r="9"/>' },
+  "قيد الكتابة":   { color:"#d99a4e", bg:"#fef3c7", short:"كتابة", icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
+  "قيد الانتاج": { color:"#a78bfa", bg:"#ede9fe", short:"إنتاج", icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
+  "تم الانتاج":    { color:"#67e8f9", bg:"#cffafe", short:"مُنتَجة", icon:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
+  "تم النشر":      { color:"#4ade80", bg:"#dcfce7", short:"منشورة", icon:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' },
+  "فكرة عليها تحفظ": { color:"#f87171", bg:"#fee2e2", short:"تحفظ", icon:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
 };
-
-const ITEMS =
-
-[
+const DEFAULT_ITEMS = [
 {id:1,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة يوتيوب كاملة تجيب بالترتيب على: ماذا (تعريف المظلة) - لماذا (سبب التأسيس) - أين (نطاق العمل) - متى (التوقيت والمراحل) - كيف (آلية العمل بالمحاور الخمسة) - من (بدون كشف هويات، وصف عام لطبيعة القائمين)، وتختم بالرؤية والرسالة والقيم الحاكمة.",fmt:"ريلز + يوتيوب"},
 {id:2,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة ريلز ٦٠ ثانية: تركز فقط على «لماذا» و«إزاي تقدر تساعد»، لأن ده اللي بيوقف السكرول، مع CTA واضح في آخر ٥ ثواني.",fmt:"ريلز + يوتيوب"},
 {id:3,cat:"١. الفيديو التعريفي بالمظلة",idea:"فيديو «٣ أسئلة بيتسألولنا كتير»: هل انتوا سياسيين؟ مين بيمولكم؟ إزاي أثق فيكم وبياناتي هتتحمي؟ - رد مباشر وهادئ على كل سؤال.",fmt:"ريلز + يوتيوب"},
@@ -608,12 +521,8 @@ const ITEMS =
 {id:265,cat:"٤٢. من التردد إلى الفعل - سلسلة تحوّل الموقف",idea:"الحلقة ٤: «اتكلم» - التعبير عن رأي بسيط في التعليقات أو في نقاش خاص.",fmt:"سلسلة يوتيوب"},
 {id:266,cat:"٤٢. من التردد إلى الفعل - سلسلة تحوّل الموقف",idea:"الحلقة ٥: «انضم» - لمن حابب ياخد خطوة أكبر، بدعوة هادئة للتطوع أو الدعم بشكل رسمي عبر الموقع.",fmt:"سلسلة يوتيوب"}
 ];
-
-let state = {};        // { [id]: { status, notes, script } } — من مسار tracker
-let customItems = {};  // { [id]: { cat, idea, fmt } } — أفكار مُضافة يدويًا
-let itemOverrides = {};// { [id]: { cat, idea, fmt } } — تعديلات على أفكار أساسية
-let deletedItems = {}; // { [id]: true } — أفكار محذوفة (أساسية أو مُضافة)
-
+let ITEMS = [];
+let state = {};
 let query = "";
 let catFilter = "الكل";
 let statusFilter = "الكل";
@@ -622,158 +531,33 @@ let fb = null;
 let saveTimers = {};
 let savingIds = {};
 let firebaseOk = false;
-
-let isOwner = false;
-let currentUserEmail = null;
-
 let openNotes = new Set();
 let openScripts = new Set();
 let selectedIds = new Set();
+let currentUser = null;
+let itemsLoaded = false;
+let dbListenerAttached = false;
 
-let ideaFormMode = null;   // "add" | "edit" | null
-let editingId = null;
-let addNewCatMode = false;
-let addNewFmtMode = false;
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function getItemState(id){ return state[id] || { status: "لم تُنتج", notes: "", script: "" }; }
+function isOwner() { return currentUser && currentUser.email === "fedaalhaq@gmail.com"; }
 
-function esc(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-function getBaseItems(){
-  return ITEMS
-    .filter(item => !deletedItems[item.id])
-    .map(item => {
-      const ov = itemOverrides[item.id];
-      return ov ? { ...item, ...ov } : item;
-    });
-}
-
-function getCustomItemsArr(){
-  return Object.keys(customItems)
-    .filter(id => !deletedItems[id])
-    .map(id => ({
-      id: Number(id),
-      cat: customItems[id].cat,
-      idea: customItems[id].idea,
-      fmt: customItems[id].fmt,
-      __custom: true,
-    }));
-}
-
-function getAllItems(){
-  return getBaseItems().concat(getCustomItemsArr());
-}
-
-function isCustomId(id){
-  return !!customItems[id];
-}
-
-function getCategories(){
-  return [...new Set(getAllItems().map(i => i.cat))];
-}
-
-function getFormats(){
-  return [...new Set(getAllItems().map(i => i.fmt))];
-}
-
-function getItemState(id){
-  return state[id] || { status: "لم تُنتج", notes: "", script: "" };
-}
-
-/* ============================================================
-   حفظ الحالة (status) — يستدعي إعادة رسم كاملة (تغيير غير متكرر)
-   ============================================================ */
-function updateStatus(id, status){
-  const current = getItemState(id);
-  const next = { ...current, status };
-  state[id] = next;
-  savingIds[id] = true;
-  renderAll();
-
-  if (fb) {
-    const itemRef = fb.ref(fb.db, "tracker/" + id);
-    fb.update(itemRef, next).then(() => {
-      delete savingIds[id];
-      document.getElementById("saveError").style.display = "none";
-    }).catch(() => {
-      delete savingIds[id];
-      document.getElementById("saveError").style.display = "block";
-    }).finally(() => {
-      renderList();
-    });
-  }
-}
-
-/* ============================================================
-   حفظ الملاحظة/السكريبت — بدون إعادة رسم كاملة (يمنع إغلاق
-   الخانة أثناء الكتابة، وهو الخلل اللي كان بيحصل قبل كده)
-   ============================================================ */
-function saveField(id, field, value){
-  const current = getItemState(id);
-  const next = { ...current, [field]: value };
-  state[id] = next;
-
-  const tagEl = document.getElementById("saving-" + id);
-  if (tagEl) tagEl.style.display = "inline";
-
-  if (!fb) return;
-  const itemRef = fb.ref(fb.db, "tracker/" + id);
-  fb.update(itemRef, { [field]: value }).then(() => {
-    if (tagEl) tagEl.style.display = "none";
-    document.getElementById("saveError").style.display = "none";
-  }).catch(() => {
-    if (tagEl) tagEl.style.display = "none";
-    document.getElementById("saveError").style.display = "block";
-  });
-}
-
-function renderAll(){
-  renderLegend();
-  renderFilters();
+function updateOwnerUI() {
+  const bar = document.getElementById("ownerBar");
+  const addBtn = document.getElementById("addBtn");
+  if (isOwner()) { bar.classList.add("visible"); addBtn.classList.remove("hidden"); }
+  else { bar.classList.remove("visible"); addBtn.classList.add("hidden"); }
   renderList();
-  renderBulkBar();
 }
 
-/* ============================================================
-   الوضع الليلي/النهاري
-   ============================================================ */
-function applyTheme(theme){
-  if (theme === "light") {
-    document.documentElement.setAttribute("data-theme", "light");
-    document.getElementById("themeIcon").textContent = "☀️";
-    document.getElementById("themeLabel").textContent = "الوضع النهاري";
-  } else {
-    document.documentElement.removeAttribute("data-theme");
-    document.getElementById("themeIcon").textContent = "🌙";
-    document.getElementById("themeLabel").textContent = "الوضع الليلي";
-  }
-  localStorage.setItem("almizalla-theme", theme);
-}
-
-document.getElementById("themeToggle").addEventListener("click", () => {
-  const isLight = document.documentElement.getAttribute("data-theme") === "light";
-  applyTheme(isLight ? "dark" : "light");
-});
-
-/* ============================================================
-   عناصر الواجهة العامة
-   ============================================================ */
 function renderLegend(){
-  const allItems = getAllItems();
   const counts = {}; STATUSES.forEach(s => counts[s] = 0);
-  allItems.forEach(item => { const s = getItemState(item.id).status; counts[s] = (counts[s]||0) + 1; });
-
+  ITEMS.forEach(item => { const s = getItemState(item.id).status; counts[s] = (counts[s]||0) + 1; });
   const legend = document.getElementById("legend");
   legend.innerHTML = STATUSES.map(s => {
-    const m = STATUS_META[s];
-    const active = statusFilter === s;
-    return `<button class="chip${active ? ' active':''}" data-status="${esc(s)}"
-      style="${active ? `background:${m.bg};border-color:${m.bg};color:${m.color};` : ''}">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg>
-      ${esc(s)} <span class="n">${counts[s]}</span>
-    </button>`;
+    const m = STATUS_META[s]; const active = statusFilter === s;
+    return `<button class="chip${active?' active':''}" data-status="${esc(s)}" style="${active?`background:${m.bg};border-color:${m.color};color:${m.color};`:''}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg> ${esc(s)} <span class="n">${counts[s]}</span></button>`;
   }).join("") + (statusFilter !== "الكل" ? `<button class="clear-filter" id="clearStatusBtn">إلغاء الفلتر</button>` : "");
-
   legend.querySelectorAll(".chip").forEach(btn => {
     btn.addEventListener("click", () => {
       const s = btn.getAttribute("data-status");
@@ -783,49 +567,42 @@ function renderLegend(){
   });
   const clearBtn = document.getElementById("clearStatusBtn");
   if (clearBtn) clearBtn.addEventListener("click", () => { statusFilter = "الكل"; renderAll(); });
-
   const progressBar = document.getElementById("progressBar");
   progressBar.innerHTML = STATUSES.map(s => {
-    const w = (counts[s] / allItems.length) * 100;
+    const w = ITEMS.length ? (counts[s] / ITEMS.length) * 100 : 0;
     if (w <= 0) return "";
     return `<div class="progress-seg" style="width:${w}%;background:${STATUS_META[s].color}" title="${esc(s)}: ${counts[s]}"></div>`;
   }).join("");
-
   const done = counts["تم النشر"];
-  const pct = Math.round((done / allItems.length) * 100);
+  const pct = ITEMS.length ? Math.round((done / ITEMS.length) * 100) : 0;
   document.getElementById("pctVal").textContent = pct + "%";
-  document.getElementById("pctLabel").textContent = `منشور من ${allItems.length} فكرة`;
+  document.getElementById("pctLabel").textContent = `منشور من ${ITEMS.length} فكرة`;
 }
 
 function renderFilters(){
-  const cats = getCategories();
-  const fmts = getFormats();
-
+  const cats = [...new Set(ITEMS.map(i => i.cat))];
+  const fmts = [...new Set(ITEMS.map(i => i.fmt))];
   const catSel = document.getElementById("catFilter");
-  const prevCat = catSel.value || catFilter;
-  catSel.innerHTML = `<option value="الكل">كل المحاور (${cats.length})</option>` +
-    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  catSel.value = cats.includes(prevCat) ? prevCat : "الكل";
-  if (!catSel.dataset.wired) {
-    catSel.dataset.wired = "1";
+  if (!catSel.dataset.built) {
+    catSel.innerHTML = `<option value="الكل">كل المحاور</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    catSel.dataset.built = "1";
     catSel.addEventListener("change", () => { catFilter = catSel.value; renderAll(); });
   }
-
   const fmtSel = document.getElementById("fmtFilter");
-  const prevFmt = fmtSel.value || fmtFilter;
-  fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
-    fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
-  fmtSel.value = fmts.includes(prevFmt) ? prevFmt : "الكل";
-  if (!fmtSel.dataset.wired) {
-    fmtSel.dataset.wired = "1";
+  if (!fmtSel.dataset.built) {
+    fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` + fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    fmtSel.dataset.built = "1";
     fmtSel.addEventListener("change", () => { fmtFilter = fmtSel.value; renderAll(); });
   }
-
-  document.getElementById("addIdeaBtn").style.display = isOwner ? "inline-flex" : "none";
+  document.getElementById("bulkCat").innerHTML = `<option value="">تغيير المحور...</option>` + cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  document.getElementById("bulkFmt").innerHTML = `<option value="">تغيير الصيغة...</option>` + fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+  document.getElementById("bulkStatus").innerHTML = `<option value="">تغيير الحالة...</option>` + STATUSES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  document.getElementById("modalCat").innerHTML = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  document.getElementById("modalFmt").innerHTML = fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
 }
 
 function getFiltered(){
-  return getAllItems().filter(item => {
+  return ITEMS.filter(item => {
     if (catFilter !== "الكل" && item.cat !== catFilter) return false;
     if (fmtFilter !== "الكل" && item.fmt !== fmtFilter) return false;
     const st = getItemState(item.id).status;
@@ -841,97 +618,69 @@ function getFiltered(){
 function renderList(){
   const filtered = getFiltered();
   document.getElementById("resultCount").textContent = filtered.length + " نتيجة";
-
   const grouped = {};
-  filtered.forEach(item => {
-    if (!grouped[item.cat]) grouped[item.cat] = [];
-    grouped[item.cat].push(item);
-  });
-
+  filtered.forEach(item => { if (!grouped[item.cat]) grouped[item.cat] = []; grouped[item.cat].push(item); });
   const main = document.getElementById("mainList");
-
-  if (Object.keys(grouped).length === 0) {
-    main.innerHTML = `<div class="empty">لا توجد نتائج مطابقة لبحثك</div>`;
-    return;
-  }
-
+  if (Object.keys(grouped).length === 0) { main.innerHTML = `<div class="empty">لا توجد نتائج مطابقة لبحثك</div>`; return; }
   main.innerHTML = Object.entries(grouped).map(([cat, items]) => `
     <div class="cat-group">
       <div class="cat-title"><span class="bar"></span>${esc(cat)} <span class="count">(${items.length})</span></div>
-      <div class="items">
-        ${items.map(item => renderItem(item)).join("")}
-      </div>
+      <div class="items">${items.map(item => renderItem(item)).join("")}</div>
     </div>
   `).join("");
-
-  wireListEvents(main);
-}
-
-function wireListEvents(main){
   main.querySelectorAll(".status-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = Number(btn.getAttribute("data-id"));
-      const s = btn.getAttribute("data-status");
-      updateStatus(id, s);
-    });
+    btn.addEventListener("click", () => { const id = Number(btn.getAttribute("data-id")); const s = btn.getAttribute("data-status"); updateItem(id, { status: s }); });
   });
-
   main.querySelectorAll(".notes-toggle").forEach(btn => {
     btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
+      const id = Number(btn.getAttribute("data-id"));
+      if (openNotes.has(id)) openNotes.delete(id); else openNotes.add(id);
       const ta = document.getElementById("notes-" + id);
-      const willOpen = !ta.classList.contains("open");
-      ta.classList.toggle("open", willOpen);
-      if (willOpen) { openNotes.add(id); ta.focus(); } else { openNotes.delete(id); }
+      if (ta) ta.classList.toggle("open");
+      if (ta && ta.classList.contains("open")) setTimeout(() => ta.focus(), 50);
+    });
+  });
+  main.querySelectorAll(".script-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.getAttribute("data-id"));
+      if (openScripts.has(id)) openScripts.delete(id); else openScripts.add(id);
+      const ta = document.getElementById("script-" + id);
+      if (ta) ta.classList.toggle("open");
+      if (ta && ta.classList.contains("open")) setTimeout(() => ta.focus(), 50);
     });
   });
   main.querySelectorAll("textarea.notes").forEach(ta => {
     ta.addEventListener("input", () => {
       const id = Number(ta.getAttribute("data-id"));
-      const val = ta.value;
-      clearTimeout(saveTimers["notes-" + id]);
-      saveTimers["notes-" + id] = setTimeout(() => saveField(id, "notes", val), 500);
-    });
-  });
-
-  main.querySelectorAll(".script-toggle").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      const ta = document.getElementById("script-" + id);
-      const willOpen = !ta.classList.contains("open");
-      ta.classList.toggle("open", willOpen);
-      if (willOpen) { openScripts.add(id); ta.focus(); } else { openScripts.delete(id); }
+      clearTimeout(saveTimers[id]);
+      savingIds[id] = true;
+      updateSavingIndicator(id, true);
+      saveTimers[id] = setTimeout(() => { updateItem(id, { notes: ta.value }); }, 600);
     });
   });
   main.querySelectorAll("textarea.script").forEach(ta => {
     ta.addEventListener("input", () => {
       const id = Number(ta.getAttribute("data-id"));
-      const val = ta.value;
-      clearTimeout(saveTimers["script-" + id]);
-      saveTimers["script-" + id] = setTimeout(() => saveField(id, "script", val), 500);
+      clearTimeout(saveTimers[id]);
+      savingIds[id] = true;
+      updateSavingIndicator(id, true);
+      saveTimers[id] = setTimeout(() => { updateItem(id, { script: ta.value }); }, 600);
     });
   });
-
-  main.querySelectorAll(".item-checkbox").forEach(cb => {
+  main.querySelectorAll(".item-select input").forEach(cb => {
     cb.addEventListener("change", () => {
       const id = Number(cb.getAttribute("data-id"));
       if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
-      renderAll();
+      const itemEl = cb.closest(".item");
+      if (itemEl) itemEl.classList.toggle("selected", cb.checked);
+      updateBulkBar();
     });
   });
-
-  main.querySelectorAll(".edit-toggle").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = Number(btn.getAttribute("data-id"));
-      openEditForm(id);
-    });
+  main.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => { openEditModal(Number(btn.getAttribute("data-id"))); });
   });
-
-  main.querySelectorAll(".delete-toggle").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = Number(btn.getAttribute("data-id"));
-      deleteIdea(id);
-    });
+  main.querySelectorAll(".delete-item-btn").forEach(btn => {
+    btn.addEventListener("click", () => { if (confirm("هل أنت متأكد من حذف هذه الفكرة؟")) deleteItemById(Number(btn.getAttribute("data-id"))); });
   });
 }
 
@@ -941,329 +690,167 @@ function renderItem(item){
   const isSaving = !!savingIds[item.id];
   const hasNote = !!st.notes;
   const hasScript = !!st.script;
-  const noteOpen = openNotes.has(String(item.id));
-  const scriptOpen = openScripts.has(String(item.id));
-  const isSelected = selectedIds.has(item.id);
-
-  return `
-    <div class="item${isSelected ? ' selected':''}">
-      <div class="item-row">
-        ${isOwner ? `<input type="checkbox" class="item-checkbox" data-id="${item.id}" ${isSelected ? 'checked':''} title="تحديد للتعديل الجماعي" />` : ""}
-        <div class="item-id">#${item.id}</div>
-        <div class="item-body">
-          <div class="item-idea">${esc(item.idea)}</div>
-          <div class="item-meta">
-            <span class="fmt-tag">${esc(item.fmt)}</span>
-            <span class="saving-tag" id="saving-${item.id}" style="display:${isSaving ? 'inline':'none'}">يحفظ...</span>
-            <button class="script-toggle${hasScript ? ' has-note':''}" data-id="${item.id}">
-              ${hasScript ? "عرض/تعديل السكريبت" : "+ إضافة سكريبت"}
-            </button>
-            <button class="notes-toggle${hasNote ? ' has-note':''}" data-id="${item.id}">
-              ${hasNote ? "عرض/تعديل الملاحظة" : "+ إضافة ملاحظة"}
-            </button>
-            ${isOwner ? `<button class="edit-toggle" data-id="${item.id}">تعديل الفكرة</button>` : ""}
-            ${isOwner ? `<button class="delete-toggle" data-id="${item.id}">حذف</button>` : ""}
-          </div>
-          <textarea class="script${scriptOpen ? ' open':''}" id="script-${item.id}" data-id="${item.id}"
-            placeholder="اكتب هنا السكريبت الخاص بهذه الفكرة (كاتب السكريبت)...">${esc(st.script || "")}</textarea>
-          <textarea class="notes${noteOpen ? ' open':''}" id="notes-${item.id}" data-id="${item.id}"
-            placeholder="ملاحظة أو تنبيه تحريري/أمني خاص بهذه الفكرة...">${esc(st.notes)}</textarea>
+  const notesOpen = openNotes.has(item.id) ? "open" : "";
+  const scriptOpen = openScripts.has(item.id) ? "open" : "";
+  const owner = isOwner();
+  const selected = selectedIds.has(item.id);
+  return `<div class="item${selected?' selected':''}" data-id="${item.id}" style="border-left:3px solid ${meta.color};">
+    <div class="item-row">
+      <div class="item-select"><input type="checkbox" data-id="${item.id}" ${selected?'checked':''} /></div>
+      <div class="item-id">#${item.id}</div>
+      <div class="item-body">
+        <div class="item-idea">${esc(item.idea)}</div>
+        <div class="item-meta">
+          <span class="fmt-tag">${esc(item.fmt)}</span>
+          ${isSaving?`<span class="saving-tag">يحفظ...</span>`:""}
+          <button class="notes-toggle${hasNote?' has-note':''}" data-id="${item.id}">${hasNote?"عرض/تعديل الملاحظة":"+ إضافة ملاحظة"}</button>
+          <button class="script-toggle${hasScript?' has-script':''}" data-id="${item.id}">${hasScript?"عرض/تعديل السكريبت":"+ إضافة سكريبت"}</button>
         </div>
-        <div class="status-col">
-          ${STATUSES.map(s => {
-            const m = STATUS_META[s];
-            const active = st.status === s;
-            return `<button class="status-btn${active ? ' active':''}" data-id="${item.id}" data-status="${esc(s)}"
-              style="${active ? `background:${m.bg};border-color:${m.bg};color:${m.color};` : ''}">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg>
-              ${esc(s)}
-            </button>`;
-          }).join("")}
-        </div>
+        <textarea class="notes ${notesOpen}" id="notes-${item.id}" data-id="${item.id}" placeholder="ملاحظة أو تنبيه تحريري/أمني خاص بهذه الفكرة...">${esc(st.notes||"")}</textarea>
+        <textarea class="script ${scriptOpen}" id="script-${item.id}" data-id="${item.id}" placeholder="السكريبت أو النص المنطوق للفيديو...">${esc(st.script||"")}</textarea>
+        ${owner?`<div class="item-actions visible"><button class="edit-btn" data-id="${item.id}">✎ تعديل</button><button class="delete-item-btn delete" data-id="${item.id}">🗑 حذف</button></div>`:''}
+      </div>
+      <div class="status-col">
+        ${STATUSES.map(s => {
+          const m = STATUS_META[s]; const active = st.status === s;
+          return `<button class="status-btn${active?' active':''}" data-id="${item.id}" data-status="${esc(s)}" style="${active?`background:${m.bg};border-color:${m.bg};color:${m.color};`:''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg> ${esc(s)}</button>`;
+        }).join("")}
       </div>
     </div>
-  `;
+  </div>`;
 }
 
-/* ============================================================
-   نموذج إضافة/تعديل فكرة (Owner فقط)
-   ============================================================ */
-const NEW_CAT_VALUE = "__new_cat__";
-const NEW_FMT_VALUE = "__new_fmt__";
-
-function renderIdeaFormOptions(currentCat, currentFmt){
-  const catSel = document.getElementById("ideaCatSelect");
-  const fmtSel = document.getElementById("ideaFmtSelect");
-  const cats = getCategories();
-  const fmts = getFormats();
-
-  catSel.innerHTML = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
-    `<option value="${NEW_CAT_VALUE}">+ محور جديد...</option>`;
-  if (currentCat && cats.includes(currentCat)) catSel.value = currentCat;
-
-  fmtSel.innerHTML = fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("") +
-    `<option value="${NEW_FMT_VALUE}">+ صيغة جديدة...</option>`;
-  if (currentFmt && fmts.includes(currentFmt)) fmtSel.value = currentFmt;
-}
-
-function resetIdeaForm(){
-  document.getElementById("ideaText").value = "";
-  document.getElementById("ideaFormError").style.display = "none";
-  document.getElementById("ideaCatInput").value = "";
-  document.getElementById("ideaFmtInput").value = "";
-  document.getElementById("ideaCatInput").style.display = "none";
-  document.getElementById("ideaFmtInput").style.display = "none";
-  document.getElementById("ideaCatSelect").style.display = "block";
-  document.getElementById("ideaFmtSelect").style.display = "block";
-  addNewCatMode = false;
-  addNewFmtMode = false;
-}
-
-function openAddForm(){
-  if (!isOwner) return;
-  ideaFormMode = "add";
-  editingId = null;
-  resetIdeaForm();
-  renderIdeaFormOptions(null, null);
-  document.getElementById("ideaFormTitle").textContent = "إضافة فكرة جديدة";
-  document.getElementById("ideaSubmitBtn").textContent = "إضافة الفكرة";
-  document.getElementById("ideaForm").style.display = "block";
-  document.getElementById("ideaForm").scrollIntoView({behavior:"smooth", block:"center"});
-}
-
-function openEditForm(id){
-  if (!isOwner) return;
-  const item = getAllItems().find(i => i.id === id);
+function updateSavingIndicator(id, isSaving) {
+  const item = document.querySelector(`.item[data-id="${id}"]`);
   if (!item) return;
-  ideaFormMode = "edit";
-  editingId = id;
-  resetIdeaForm();
-  document.getElementById("ideaText").value = item.idea;
-  renderIdeaFormOptions(item.cat, item.fmt);
-  document.getElementById("ideaFormTitle").textContent = "تعديل الفكرة #" + id;
-  document.getElementById("ideaSubmitBtn").textContent = "حفظ التعديل";
-  document.getElementById("ideaForm").style.display = "block";
-  document.getElementById("ideaForm").scrollIntoView({behavior:"smooth", block:"center"});
+  const tag = item.querySelector('.saving-tag');
+  if (tag) { tag.textContent = isSaving ? 'يحفظ...' : ''; tag.style.display = isSaving ? 'inline' : 'none'; }
 }
 
-function closeIdeaForm(){
-  ideaFormMode = null;
-  editingId = null;
-  document.getElementById("ideaForm").style.display = "none";
+function renderAll(){ renderLegend(); renderFilters(); renderList(); }
+
+function updateItem(id, patch){
+  const current = getItemState(id);
+  const next = { ...current, ...patch };
+  state[id] = next;
+  const structuralChange = patch.status !== undefined || patch.cat !== undefined || patch.fmt !== undefined || patch.idea !== undefined;
+  if (structuralChange) { savingIds[id] = true; renderAll(); }
+  if (fb) {
+    const itemRef = fb.ref(fb.db, "tracker/" + id);
+    fb.update(itemRef, next).then(() => {
+      delete savingIds[id]; document.getElementById("saveError").style.display = "none";
+      if (structuralChange) renderAll(); else updateSavingIndicator(id, false);
+    }).catch(() => {
+      delete savingIds[id]; document.getElementById("saveError").style.display = "block";
+      if (structuralChange) renderAll(); else updateSavingIndicator(id, false);
+    });
+  }
 }
 
-document.getElementById("addIdeaBtn").addEventListener("click", openAddForm);
-document.getElementById("ideaCancelBtn").addEventListener("click", closeIdeaForm);
+function saveItemsToFirebase() {
+  if (!fb) return;
+  const itemsRef = fb.ref(fb.db, "items");
+  fb.set(itemsRef, ITEMS).catch(() => { document.getElementById("saveError").style.display = "block"; });
+}
 
-document.getElementById("ideaCatSelect").addEventListener("change", (e) => {
-  if (e.target.value === NEW_CAT_VALUE) {
-    addNewCatMode = true;
-    document.getElementById("ideaCatSelect").style.display = "none";
-    document.getElementById("ideaCatInput").style.display = "block";
-    document.getElementById("ideaCatInput").focus();
-  }
-});
-document.getElementById("ideaFmtSelect").addEventListener("change", (e) => {
-  if (e.target.value === NEW_FMT_VALUE) {
-    addNewFmtMode = true;
-    document.getElementById("ideaFmtSelect").style.display = "none";
-    document.getElementById("ideaFmtInput").style.display = "block";
-    document.getElementById("ideaFmtInput").focus();
-  }
-});
+function openAddModal() {
+  if (!isOwner()) return;
+  document.getElementById("modalTitle").textContent = "إضافة فكرة جديدة";
+  document.getElementById("modalId").value = "";
+  document.getElementById("modalCat").value = document.getElementById("modalCat").options[0]?.value || "";
+  document.getElementById("modalFmt").value = document.getElementById("modalFmt").options[0]?.value || "";
+  document.getElementById("modalIdea").value = "";
+  document.getElementById("modalDeleteBtn").style.display = "none";
+  document.getElementById("itemModal").classList.add("visible");
+}
 
-document.getElementById("ideaSubmitBtn").addEventListener("click", () => {
-  if (!isOwner) return;
-  const errBox = document.getElementById("ideaFormError");
-  const idea = document.getElementById("ideaText").value.trim();
-  const cat = addNewCatMode
-    ? document.getElementById("ideaCatInput").value.trim()
-    : document.getElementById("ideaCatSelect").value;
-  const fmt = addNewFmtMode
-    ? document.getElementById("ideaFmtInput").value.trim()
-    : document.getElementById("ideaFmtSelect").value;
+function openEditModal(id) {
+  if (!isOwner()) return;
+  const item = ITEMS.find(i => i.id === id); if (!item) return;
+  document.getElementById("modalTitle").textContent = "تعديل الفكرة #" + id;
+  document.getElementById("modalId").value = id;
+  document.getElementById("modalCat").value = item.cat;
+  document.getElementById("modalFmt").value = item.fmt;
+  document.getElementById("modalIdea").value = item.idea;
+  document.getElementById("modalDeleteBtn").style.display = "inline-block";
+  document.getElementById("itemModal").classList.add("visible");
+}
 
-  if (!idea) { errBox.textContent = "من فضلك اكتب نص الفكرة."; errBox.style.display = "block"; return; }
-  if (!cat)  { errBox.textContent = "من فضلك اختر أو اكتب المحور."; errBox.style.display = "block"; return; }
-  if (!fmt)  { errBox.textContent = "من فضلك اختر أو اكتب الصيغة."; errBox.style.display = "block"; return; }
-  if (!fb)   { errBox.textContent = "لا يوجد اتصال بقاعدة البيانات الآن."; errBox.style.display = "block"; return; }
+function closeModal() { document.getElementById("itemModal").classList.remove("visible"); }
 
-  errBox.style.display = "none";
-  const submitBtn = document.getElementById("ideaSubmitBtn");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "جارِ الحفظ...";
-
-  let opPromise;
-  if (ideaFormMode === "add") {
-    const newId = Date.now();
-    opPromise = fb.set(fb.ref(fb.db, "customItems/" + newId), { cat, idea, fmt });
-  } else if (ideaFormMode === "edit" && editingId != null) {
-    if (isCustomId(editingId)) {
-      opPromise = fb.update(fb.ref(fb.db, "customItems/" + editingId), { cat, idea, fmt });
-    } else {
-      opPromise = fb.set(fb.ref(fb.db, "itemOverrides/" + editingId), { cat, idea, fmt });
-    }
+function saveModal() {
+  if (!isOwner()) return;
+  const idVal = document.getElementById("modalId").value;
+  const cat = document.getElementById("modalCat").value;
+  const fmt = document.getElementById("modalFmt").value;
+  const idea = document.getElementById("modalIdea").value.trim();
+  if (!idea) { alert("الرجاء كتابة الفكرة"); return; }
+  if (idVal) {
+    const id = Number(idVal); const idx = ITEMS.findIndex(i => i.id === id);
+    if (idx !== -1) { ITEMS[idx] = { ...ITEMS[idx], cat, fmt, idea }; saveItemsToFirebase(); renderAll(); }
   } else {
-    opPromise = Promise.reject(new Error("invalid form state"));
+    const maxId = ITEMS.length > 0 ? Math.max(...ITEMS.map(i => i.id)) : 0;
+    ITEMS.push({ id: maxId + 1, cat, fmt, idea }); saveItemsToFirebase(); renderAll();
   }
-
-  opPromise.then(() => {
-    closeIdeaForm();
-  }).catch(() => {
-    errBox.textContent = "تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى.";
-    errBox.style.display = "block";
-  }).finally(() => {
-    submitBtn.disabled = false;
-    submitBtn.textContent = ideaFormMode === "edit" ? "حفظ التعديل" : "إضافة الفكرة";
-  });
-});
-
-function deleteIdea(id){
-  if (!isOwner || !fb) return;
-  const item = getAllItems().find(i => i.id === id);
-  if (!item) return;
-  const ok = window.confirm("هل أنت متأكد من حذف هذه الفكرة؟\n\n" + item.idea);
-  if (!ok) return;
-
-  let opPromise;
-  if (isCustomId(id)) {
-    opPromise = fb.remove(fb.ref(fb.db, "customItems/" + id));
-  } else {
-    opPromise = fb.set(fb.ref(fb.db, "deletedItems/" + id), true);
-  }
-  opPromise.catch(() => {
-    document.getElementById("saveError").style.display = "block";
-  });
-  selectedIds.delete(id);
+  closeModal();
 }
 
-/* ============================================================
-   التعديل الجماعي (Owner فقط)
-   ============================================================ */
-function renderBulkBar(){
+function deleteItem() {
+  if (!isOwner()) return;
+  const idVal = document.getElementById("modalId").value;
+  if (!idVal || !confirm("هل أنت متأكد من حذف هذه الفكرة؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+  deleteItemById(Number(idVal)); closeModal();
+}
+
+function deleteItemById(id) {
+  if (!isOwner()) return;
+  ITEMS = ITEMS.filter(i => i.id !== id);
+  delete state[id];
+  if (fb) { const itemRef = fb.ref(fb.db, "tracker/" + id); fb.set(itemRef, null); }
+  saveItemsToFirebase(); selectedIds.delete(id); updateBulkBar(); renderAll();
+}
+
+function updateBulkBar() {
   const bar = document.getElementById("bulkBar");
-  if (!isOwner || selectedIds.size === 0) {
-    bar.classList.remove("open");
-    return;
-  }
-  bar.classList.add("open");
-  document.getElementById("bulkCount").textContent = selectedIds.size + " فكرة محددة";
-
-  const statusSel = document.getElementById("bulkStatusSelect");
-  if (!statusSel.dataset.wired) {
-    statusSel.innerHTML = `<option value="">بدون تغيير الحالة</option>` +
-      STATUSES.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
-    statusSel.dataset.wired = "1";
-  }
-
-  const catSel = document.getElementById("bulkCatSelect");
-  const cats = getCategories();
-  const prevCat = catSel.value;
-  catSel.innerHTML = `<option value="">بدون تغيير المحور</option>` +
-    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
-    `<option value="${NEW_CAT_VALUE}">+ محور جديد...</option>`;
-  catSel.value = prevCat || "";
-
-  const fmtSel = document.getElementById("bulkFmtSelect");
-  const fmts = getFormats();
-  const prevFmt = fmtSel.value;
-  fmtSel.innerHTML = `<option value="">بدون تغيير الصيغة</option>` +
-    fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("") +
-    `<option value="${NEW_FMT_VALUE}">+ صيغة جديدة...</option>`;
-  fmtSel.value = prevFmt || "";
+  const info = document.getElementById("bulkInfo");
+  if (selectedIds.size > 0) { bar.classList.add("visible"); info.textContent = `تم تحديد ${selectedIds.size} فكرة`; }
+  else bar.classList.remove("visible");
 }
 
-document.getElementById("bulkClearBtn").addEventListener("click", () => {
+function clearSelection() {
   selectedIds.clear();
-  renderAll();
-});
+  document.querySelectorAll('.item-select input').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+  updateBulkBar();
+}
 
-document.getElementById("bulkCatSelect").addEventListener("change", (e) => {
-  if (e.target.value === NEW_CAT_VALUE) {
-    const name = window.prompt("اكتب اسم المحور الجديد:");
-    if (name && name.trim()) {
-      const opt = document.createElement("option");
-      opt.value = name.trim(); opt.textContent = name.trim();
-      e.target.insertBefore(opt, e.target.lastElementChild);
-      e.target.value = name.trim();
-    } else {
-      e.target.value = "";
-    }
-  }
-});
-document.getElementById("bulkFmtSelect").addEventListener("change", (e) => {
-  if (e.target.value === NEW_FMT_VALUE) {
-    const name = window.prompt("اكتب اسم الصيغة الجديدة:");
-    if (name && name.trim()) {
-      const opt = document.createElement("option");
-      opt.value = name.trim(); opt.textContent = name.trim();
-      e.target.insertBefore(opt, e.target.lastElementChild);
-      e.target.value = name.trim();
-    } else {
-      e.target.value = "";
-    }
-  }
-});
-
-document.getElementById("bulkApplyBtn").addEventListener("click", () => {
-  if (!isOwner || !fb) return;
-  const errBox = document.getElementById("bulkError");
-  const newStatus = document.getElementById("bulkStatusSelect").value;
-  const newCat = document.getElementById("bulkCatSelect").value;
-  const newFmt = document.getElementById("bulkFmtSelect").value;
-
-  if (!newStatus && !newCat && !newFmt) {
-    errBox.textContent = "اختر حقل واحد على الأقل عشان تطبّقه على الأفكار المحددة.";
-    errBox.style.display = "block";
-    return;
-  }
-  errBox.style.display = "none";
-
-  const btn = document.getElementById("bulkApplyBtn");
-  btn.disabled = true;
-  btn.textContent = "جارِ التطبيق...";
-
-  const ops = [];
+function applyBulkEdit() {
+  if (!isOwner() || selectedIds.size === 0) return;
+  const newStatus = document.getElementById("bulkStatus").value;
+  const newCat = document.getElementById("bulkCat").value;
+  const newFmt = document.getElementById("bulkFmt").value;
+  let changed = false;
   selectedIds.forEach(id => {
-    if (newStatus) {
-      ops.push(fb.update(fb.ref(fb.db, "tracker/" + id), { status: newStatus }));
-    }
-    if (newCat || newFmt) {
-      const patch = {};
-      if (newCat) patch.cat = newCat;
-      if (newFmt) patch.fmt = newFmt;
-      if (isCustomId(id)) {
-        ops.push(fb.update(fb.ref(fb.db, "customItems/" + id), patch));
-      } else {
-        ops.push(fb.update(fb.ref(fb.db, "itemOverrides/" + id), patch));
-      }
-    }
+    const item = ITEMS.find(i => i.id === id); if (!item) return;
+    if (newStatus) updateItem(id, { status: newStatus });
+    if (newCat) { item.cat = newCat; changed = true; }
+    if (newFmt) { item.fmt = newFmt; changed = true; }
   });
+  if (changed) { saveItemsToFirebase(); renderAll(); }
+  document.getElementById("bulkStatus").value = "";
+  document.getElementById("bulkCat").value = "";
+  document.getElementById("bulkFmt").value = "";
+  clearSelection();
+}
 
-  Promise.all(ops).then(() => {
-    selectedIds.clear();
-    renderAll();
-  }).catch(() => {
-    errBox.textContent = "تعذّر تطبيق بعض التعديلات — تحقق من الاتصال وحاول مرة أخرى.";
-    errBox.style.display = "block";
-  }).finally(() => {
-    btn.disabled = false;
-    btn.textContent = "تطبيق على المحدد";
-  });
-});
+function toggleTheme() {
+  document.body.classList.toggle("light-mode");
+  localStorage.setItem("theme", document.body.classList.contains("light-mode") ? "light" : "dark");
+}
+function initTheme() { const saved = localStorage.getItem("theme"); if (saved === "light") document.body.classList.add("light-mode"); }
 
-/* ============================================================
-   البحث
-   ============================================================ */
-document.getElementById("searchInput").addEventListener("input", (e) => {
-  query = e.target.value;
-  renderAll();
-});
-
-/* ============================================================
-   Firebase: تسجيل الدخول / الاتصال بالبيانات
-   ============================================================ */
-let dbListenerAttached = false;
+document.getElementById("searchInput").addEventListener("input", (e) => { query = e.target.value; renderAll(); });
+document.getElementById("themeToggle").addEventListener("click", toggleTheme);
 
 function showLogin(){
   document.getElementById("loading").style.display = "none";
@@ -1274,33 +861,31 @@ function showLogin(){
 function attachDbListener(){
   if (dbListenerAttached) return;
   dbListenerAttached = true;
-
-  fb.onValue(fb.ref(fb.db, "tracker"), (snapshot) => {
-    state = snapshot.val() || {};
-    document.getElementById("connStatus").innerHTML =
-      '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
+  const trackerRef = fb.ref(fb.db, "tracker");
+  fb.onValue(trackerRef, (snapshot) => {
+    const data = snapshot.val() || {}; state = data; if (itemsLoaded) renderAll();
+  }, (error) => {
+    document.getElementById("connStatus").innerHTML = '<span class="dot bad"></span><span>تعذّر قراءة البيانات — تحقق من صلاحيات الحساب</span>';
+  });
+  const itemsRef = fb.ref(fb.db, "items");
+  fb.onValue(itemsRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data && Array.isArray(data) && data.length > 0) ITEMS = data;
+    else ITEMS = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    itemsLoaded = true;
     document.getElementById("loading").style.display = "none";
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
-    renderAll();
+    document.getElementById("connStatus").innerHTML = '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
+    updateOwnerUI(); renderAll();
   }, (error) => {
-    document.getElementById("connStatus").innerHTML =
-      '<span class="dot bad"></span><span>تعذّر قراءة البيانات — تحقق من صلاحيات الحساب</span>';
-  });
-
-  fb.onValue(fb.ref(fb.db, "customItems"), (snapshot) => {
-    customItems = snapshot.val() || {};
-    renderAll();
-  });
-
-  fb.onValue(fb.ref(fb.db, "itemOverrides"), (snapshot) => {
-    itemOverrides = snapshot.val() || {};
-    renderAll();
-  });
-
-  fb.onValue(fb.ref(fb.db, "deletedItems"), (snapshot) => {
-    deletedItems = snapshot.val() || {};
-    renderAll();
+    ITEMS = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    itemsLoaded = true;
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("connStatus").innerHTML = '<span class="dot bad"></span><span>تعذّر قراءة قائمة الأفكار — يُعرض النسخة المحلية</span>';
+    updateOwnerUI(); renderAll();
   });
 }
 
@@ -1309,83 +894,39 @@ function wireLoginForm(){
   const emailInput = document.getElementById("loginEmail");
   const passInput = document.getElementById("loginPassword");
   const errBox = document.getElementById("loginError");
-
   function attempt(){
-    errBox.style.display = "none";
-    btn.disabled = true;
-    btn.textContent = "جارِ الدخول...";
+    errBox.style.display = "none"; btn.disabled = true; btn.textContent = "جارِ الدخول...";
     fb.signInWithEmailAndPassword(fb.auth, emailInput.value.trim(), passInput.value)
       .catch((error) => {
         errBox.style.display = "block";
         let msg = "تعذّر تسجيل الدخول (" + error.code + ")";
-        if (error.code === "auth/unauthorized-domain") {
-          msg = "هذا الموقع غير مُصرَّح له بتسجيل الدخول — أضف نطاقه في Firebase Console ضمن Authentication → Settings → Authorized domains.";
-        } else if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-          msg = "الإيميل أو كلمة المرور غير صحيحة، أو الحساب غير موجود بعد في Firebase.";
-        } else if (error.code === "auth/network-request-failed") {
-          msg = "تعذّر الاتصال بالشبكة — تأكد إن الأداة اللي بتجرّب عليها الملف مش بتحجب الاتصال بالإنترنت.";
-        }
-        errBox.textContent = msg;
-        console.error("Firebase auth error:", error.code, error.message);
-      })
-      .finally(() => {
-        btn.disabled = false;
-        btn.textContent = "دخول";
-      });
+        if (error.code === "auth/unauthorized-domain") msg = "هذا الموقع غير مُصرَّح له بتسجيل الدخول — أضف نطاقه في Firebase Console.";
+        else if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") msg = "الإيميل أو كلمة المرور غير صحيحة، أو الحساب غير موجود.";
+        else if (error.code === "auth/network-request-failed") msg = "تعذّر الاتصال بالشبكة — تأكد من اتصال الإنترنت.";
+        errBox.textContent = msg; console.error("Firebase auth error:", error.code, error.message);
+      }).finally(() => { btn.disabled = false; btn.textContent = "دخول"; });
   }
-
   btn.addEventListener("click", attempt);
   passInput.addEventListener("keydown", (e) => { if (e.key === "Enter") attempt(); });
   emailInput.addEventListener("keydown", (e) => { if (e.key === "Enter") passInput.focus(); });
-
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    fb.signOut(fb.auth);
-  });
+  document.getElementById("logoutBtn").addEventListener("click", () => { fb.signOut(fb.auth); });
 }
 
-// Wait for firebase module script to signal readiness
 window.addEventListener("firebase-ready", () => {
-  fb = window.__fb;
-  firebaseOk = true;
-  wireLoginForm();
-
+  fb = window.__fb; firebaseOk = true; initTheme(); wireLoginForm();
   fb.onAuthStateChanged(fb.auth, (user) => {
-    if (user) {
-      currentUserEmail = (user.email || "").toLowerCase();
-      isOwner = currentUserEmail === OWNER_EMAIL;
-      attachDbListener();
-    } else {
-      currentUserEmail = null;
-      isOwner = false;
-      showLogin();
-    }
+    currentUser = user;
+    if (user) attachDbListener();
+    else showLogin();
   });
 });
 
-// fallback: if firebase config fails to load entirely, show a clear error instead of hanging forever
 setTimeout(() => {
   if (!firebaseOk) {
     const hint = document.getElementById("loadingHint");
-    if (hint) {
-      hint.textContent = "تعذّر الاتصال بـ Firebase (غالبًا بسبب حجب أداة الاختبار للاتصال بالإنترنت). جرّب فتح الصفحة على بلوجر مباشرة، أو افتح الملف بنفسه من جهازك (Double click)، وتأكد إنك أضفت نطاق الموقع في Authentication → Authorized domains.";
-    }
+    if (hint) hint.textContent = "تعذّر الاتصال بـ Firebase (غالبًا بسبب حجب أداة الاختبار للاتصال بالإنترنت). جرّب فتح الصفحة على بلوجر مباشرة.";
   }
 }, 5000);
-
-/* ============================================================
-   إجراءات حماية بسيطة على مستوى الواجهة (منع النقر بالزر
-   الأيمن ونسخ المحتوى الظاهر). هذه إجراءات شكلية فقط، راجع
-   ملاحظة الأمان في آخر الرد.
-   ============================================================ */
-document.body.classList.add("locked-select");
-document.addEventListener("contextmenu", (e) => e.preventDefault());
-document.addEventListener("keydown", (e) => {
-  const k = e.key.toLowerCase();
-  if (k === "f12") e.preventDefault();
-  if (e.ctrlKey && e.shiftKey && (k === "i" || k === "j" || k === "c")) e.preventDefault();
-  if (e.ctrlKey && k === "u") e.preventDefault();
-});
 </script>
-
 </body>
 </html>
