@@ -5,12 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>جدول متابعة إنتاج الأفكار — مظلة معتقلي مصر</title>
 
-<!-- ============================================================
-     إعدادات Firebase — بيانات مشروع almizalla-tracker
-     ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
@@ -27,7 +24,7 @@
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  window.__fb = { ref, onValue, set, update, db, auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+  window.__fb = { ref, onValue, set, update, remove, db, auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
   window.dispatchEvent(new Event("firebase-ready"));
 </script>
 
@@ -35,7 +32,7 @@
   :root{
     --bg:#15171c; --panel:#1b1e26; --panel2:#1e2129; --border:#262a33;
     --text:#e5e7eb; --muted:#9ca3af; --dim:#6b7280; --faint:#4b5563;
-    --accent:#c98a3e;
+    --accent:#c98a3e; --danger:#ef4444; --danger-bg:#3b1d1d;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -68,7 +65,7 @@
   .chip.active{}
   .clear-filter{font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;}
 
-  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:flex-start;}
   .search-box{position:relative;flex:1 1 220px;}
   .search-box svg{position:absolute;right:12px;top:11px;color:var(--dim);}
   .search-box input{width:100%;background:var(--panel);border:1px solid #2a2e38;border-radius:10px;
@@ -77,7 +74,25 @@
     color:var(--text);font-size:13px;outline:none;cursor:pointer;min-width:150px;}
   .result-count{font-size:12.5px;color:var(--dim);align-self:center;margin-right:4px;}
 
-  .save-error{margin-top:10px;background:#3b1d1d;border:1px solid #7f1d1d;color:#fca5a5;
+  .owner-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .owner-btn{background:var(--accent);color:#1b1204;border:none;border-radius:8px;padding:7px 14px;
+    font-size:12.5px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+  .owner-btn:hover{opacity:.9;}
+  .owner-btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+
+  .add-form{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;display:none;}
+  .add-form.open{display:block;}
+  .add-form h3{margin:0 0 12px;font-size:15px;color:var(--accent);}
+  .form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .form-row input, .form-row textarea{background:var(--bg);border:1px solid #2a2e38;border-radius:8px;
+    padding:9px 12px;color:var(--text);font-size:13px;outline:none;flex:1;}
+  .form-row textarea{min-height:60px;resize:vertical;width:100%;}
+  .form-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .form-actions button{padding:7px 16px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;}
+  .form-actions .save-btn{background:var(--accent);color:#1b1204;}
+  .form-actions .cancel-btn{background:var(--panel);color:var(--text);border:1px solid var(--border);}
+
+  .save-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
     border-radius:8px;padding:8px 12px;font-size:12.5px;display:none;}
 
   .conn-status{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px;margin-top:10px;}
@@ -94,7 +109,7 @@
 
   .items{display:flex;flex-direction:column;gap:8px;}
   .item{background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:12px 14px;transition:border-color .15s;}
+    padding:12px 14px;transition:border-color .15s;position:relative;}
   .item-row{display:flex;gap:10px;align-items:flex-start;}
   .item-id{font-size:11px;color:var(--faint);font-weight:700;min-width:24px;padding-top:2px;}
   .item-body{flex:1;min-width:0;}
@@ -106,10 +121,15 @@
   .notes-toggle{font-size:10.5px;color:var(--faint);background:none;border:none;cursor:pointer;
     padding:0;text-decoration:underline;}
   .notes-toggle.has-note{color:var(--accent);}
+  .delete-btn{font-size:13px;background:none;border:none;cursor:pointer;padding:2px 6px;
+    opacity:.6;transition:opacity .15s;margin-right:auto;}
+  .delete-btn:hover{opacity:1;color:var(--danger);}
   textarea.notes{width:100%;margin-top:8px;background:#15171c;border:1px solid #2a2e38;
     border-radius:8px;color:var(--text);font-size:12.5px;padding:8px;min-height:56px;
     resize:vertical;outline:none;display:none;font-family:inherit;}
   textarea.notes.open{display:block;}
+  .script-label{font-size:11px;color:var(--accent);margin-top:10px;display:none;}
+  .script-label.open{display:block;}
 
   .status-col{display:flex;flex-direction:column;gap:4px;min-width:128px;}
   .status-btn{display:flex;align-items:center;gap:6px;justify-content:flex-start;
@@ -125,6 +145,7 @@
   @media (max-width:560px){
     .item-row{flex-wrap:wrap;}
     .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:6px;}
+    .form-row{flex-direction:column;}
   }
 </style>
 </head>
@@ -136,8 +157,6 @@
 </div>
 
 <script>
-  // ماسك أخطاء مبكر: لو أي جزء من التحميل فشل (خصوصًا Firebase) هيظهر السبب هنا
-  // بدل ما تفضل الصفحة عالقة على "جارِ التحميل" بصمت
   window.addEventListener("error", function(e){
     var hint = document.getElementById("loadingHint");
     if (hint && document.getElementById("loading").style.display !== "none") {
@@ -168,8 +187,11 @@
 
 <div id="app" style="display:none;">
   <div class="wrap" style="padding-top:14px;">
-    <button id="logoutBtn" style="float:left;background:none;border:1px solid var(--border);color:var(--dim);
-      border-radius:8px;padding:5px 12px;font-size:11.5px;cursor:pointer;">تسجيل الخروج</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <button id="logoutBtn" style="background:none;border:1px solid var(--border);color:var(--dim);
+        border-radius:8px;padding:5px 12px;font-size:11.5px;cursor:pointer;">تسجيل الخروج</button>
+      <div id="ownerBadge" style="display:none;font-size:11px;color:var(--accent);font-weight:600;">👤 Owner</div>
+    </div>
     <div style="clear:both;"></div>
   </div>
   <header class="top">
@@ -192,6 +214,25 @@
   </header>
 
   <div class="wrap">
+    <div class="owner-bar" id="ownerBar" style="display:none;">
+      <button class="owner-btn" id="showAddForm">+ إضافة فكرة جديدة</button>
+    </div>
+
+    <div class="add-form" id="addItemForm">
+      <h3>إضافة فكرة جديدة</h3>
+      <div class="form-row">
+        <input id="newItemCat" placeholder="المحور / التصنيف" style="flex:1;min-width:200px;" />
+        <input id="newItemFmt" placeholder="الصيغة (مثال: ريلز, يوتيوب)" style="flex:1;min-width:180px;" />
+      </div>
+      <div class="form-row">
+        <textarea id="newItemIdea" placeholder="نص الفكرة بالتفصيل..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="cancel-btn" id="cancelAddItem">إلغاء</button>
+        <button class="save-btn" id="saveNewItem">حفظ الفكرة</button>
+      </div>
+    </div>
+
     <div class="filters">
       <div class="search-box">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -212,24 +253,32 @@
 </div>
 
 <script>
-const STATUSES = ["لم تُنتج", "قيد الكتابة", "جاهزة للتصوير", "تم التصوير", "تم النشر"];
+// ====== إعدادات الصلاحيات ======
+// عدّل هذا الإيميل لإيميل الـ Owner
+const OWNER_EMAILS = ["fedaalhaq@gmail.com"];
+let isOwner = false;
+let currentUser = null;
+
+// ====== الحالات المُحدَّثة ======
+const STATUSES = ["لم تُنتج", "قيد الكتابة", "قيد الانتاج", "تم الانتاج", "تم النشر", "فكرة عليها تحفظ"];
 
 const STATUS_META = {
   "لم تُنتج":     { color:"#9ca3af", bg:"#f3f4f6", short:"لم تُنتج",
     icon:'<circle cx="12" cy="12" r="9"/>' },
   "قيد الكتابة":   { color:"#d99a4e", bg:"#fef3c7", short:"كتابة",
     icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
-  "جاهزة للتصوير": { color:"#a78bfa", bg:"#ede9fe", short:"جاهزة",
+  "قيد الانتاج": { color:"#a78bfa", bg:"#ede9fe", short:"انتاج",
     icon:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
-  "تم التصوير":    { color:"#67e8f9", bg:"#cffafe", short:"مصوَّرة",
+  "تم الانتاج":    { color:"#67e8f9", bg:"#cffafe", short:"مُنتَجة",
     icon:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },
   "تم النشر":      { color:"#4ade80", bg:"#dcfce7", short:"منشورة",
     icon:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' },
+  "فكرة عليها تحفظ": { color:"#f87171", bg:"#fee2e2", short:"تحفظ",
+    icon:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
 };
 
-const ITEMS = 
-
-[
+// ====== الأفكار الافتراضية (الثابتة) ======
+const DEFAULT_ITEMS = [
 {id:1,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة يوتيوب كاملة تجيب بالترتيب على: ماذا (تعريف المظلة) - لماذا (سبب التأسيس) - أين (نطاق العمل) - متى (التوقيت والمراحل) - كيف (آلية العمل بالمحاور الخمسة) - من (بدون كشف هويات، وصف عام لطبيعة القائمين)، وتختم بالرؤية والرسالة والقيم الحاكمة.",fmt:"ريلز + يوتيوب"},
 {id:2,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة ريلز ٦٠ ثانية: تركز فقط على «لماذا» و«إزاي تقدر تساعد»، لأن ده اللي بيوقف السكرول، مع CTA واضح في آخر ٥ ثواني.",fmt:"ريلز + يوتيوب"},
 {id:3,cat:"١. الفيديو التعريفي بالمظلة",idea:"فيديو «٣ أسئلة بيتسألولنا كتير»: هل انتوا سياسيين؟ مين بيمولكم؟ إزاي أثق فيكم وبياناتي هتتحمي؟ - رد مباشر وهادئ على كل سؤال.",fmt:"ريلز + يوتيوب"},
@@ -498,30 +547,37 @@ const ITEMS =
 {id:266,cat:"٤٢. من التردد إلى الفعل - سلسلة تحوّل الموقف",idea:"الحلقة ٥: «انضم» - لمن حابب ياخد خطوة أكبر، بدعوة هادئة للتطوع أو الدعم بشكل رسمي عبر الموقع.",fmt:"سلسلة يوتيوب"}
 ];
 
-const CATEGORIES = [...new Set(ITEMS.map(i => i.cat))];
-const FORMATS = [...new Set(ITEMS.map(i => i.fmt))];
-
-let state = {};      // { [id]: { status, notes } }
+// ====== بيانات ديناميكية من Firebase ======
+let dynamicItems = [];
+let deletedIds = new Set();
+let state = {};      // { [id]: { status, notes, script_notes } }
 let query = "";
 let catFilter = "الكل";
 let statusFilter = "الكل";
 let fmtFilter = "الكل";
-let fb = null;        // firebase helpers, set once ready
-let saveTimers = {};  // debounce timers for notes per id
+let fb = null;
+let saveTimers = {};
 let savingIds = {};
 let firebaseOk = false;
+let dbListenerAttached = false;
+
+function getAllItems() {
+  const base = [...DEFAULT_ITEMS, ...dynamicItems];
+  return base.filter(item => !deletedIds.has(item.id));
+}
 
 function esc(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function getItemState(id){
-  return state[id] || { status: "لم تُنتج", notes: "" };
+  return state[id] || { status: "لم تُنتج", notes: "", script_notes: "" };
 }
 
 function renderLegend(){
+  const allItems = getAllItems();
   const counts = {}; STATUSES.forEach(s => counts[s] = 0);
-  ITEMS.forEach(item => { const s = getItemState(item.id).status; counts[s] = (counts[s]||0) + 1; });
+  allItems.forEach(item => { const s = getItemState(item.id).status; counts[s] = (counts[s]||0) + 1; });
 
   const legend = document.getElementById("legend");
   legend.innerHTML = STATUSES.map(s => {
@@ -530,7 +586,7 @@ function renderLegend(){
     return `<button class="chip${active ? ' active':''}" data-status="${esc(s)}"
       style="${active ? `background:${m.bg};border-color:${m.bg};color:${m.color};` : ''}">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg>
-      ${esc(s)} <span class="n">${counts[s]}</span>
+      ${esc(s)} <span class="n">${counts[s]||0}</span>
     </button>`;
   }).join("") + (statusFilter !== "الكل" ? `<button class="clear-filter" id="clearStatusBtn">إلغاء الفلتر</button>` : "");
 
@@ -546,36 +602,55 @@ function renderLegend(){
 
   const progressBar = document.getElementById("progressBar");
   progressBar.innerHTML = STATUSES.map(s => {
-    const w = (counts[s] / ITEMS.length) * 100;
+    const w = allItems.length ? (counts[s] / allItems.length) * 100 : 0;
     if (w <= 0) return "";
     return `<div class="progress-seg" style="width:${w}%;background:${STATUS_META[s].color}" title="${esc(s)}: ${counts[s]}"></div>`;
   }).join("");
 
   const done = counts["تم النشر"];
-  const pct = Math.round((done / ITEMS.length) * 100);
+  const pct = allItems.length ? Math.round((done / allItems.length) * 100) : 0;
   document.getElementById("pctVal").textContent = pct + "%";
-  document.getElementById("pctLabel").textContent = `منشور من ${ITEMS.length} فكرة`;
+  document.getElementById("pctLabel").textContent = `منشور من ${allItems.length} فكرة`;
 }
 
 function renderFilters(){
+  const allItems = getAllItems();
+  const cats = [...new Set(allItems.map(i => i.cat))];
+  const fmts = [...new Set(allItems.map(i => i.fmt))];
+
   const catSel = document.getElementById("catFilter");
   if (!catSel.dataset.built) {
-    catSel.innerHTML = `<option value="الكل">كل المحاور (${CATEGORIES.length})</option>` +
-      CATEGORIES.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    catSel.innerHTML = `<option value="الكل">كل المحاور</option>` +
+      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
     catSel.dataset.built = "1";
     catSel.addEventListener("change", () => { catFilter = catSel.value; renderAll(); });
+  } else {
+    // refresh options if needed
+    const currentVal = catSel.value;
+    catSel.innerHTML = `<option value="الكل">كل المحاور</option>` +
+      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    catSel.value = cats.includes(currentVal) ? currentVal : "الكل";
+    if (catSel.value !== currentVal) catFilter = catSel.value;
   }
+
   const fmtSel = document.getElementById("fmtFilter");
   if (!fmtSel.dataset.built) {
     fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
-      FORMATS.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+      fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
     fmtSel.dataset.built = "1";
     fmtSel.addEventListener("change", () => { fmtFilter = fmtSel.value; renderAll(); });
+  } else {
+    const currentVal = fmtSel.value;
+    fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
+      fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+    fmtSel.value = fmts.includes(currentVal) ? currentVal : "الكل";
+    if (fmtSel.value !== currentVal) fmtFilter = fmtSel.value;
   }
 }
 
 function getFiltered(){
-  return ITEMS.filter(item => {
+  const allItems = getAllItems();
+  return allItems.filter(item => {
     if (catFilter !== "الكل" && item.cat !== catFilter) return false;
     if (fmtFilter !== "الكل" && item.fmt !== fmtFilter) return false;
     const st = getItemState(item.id).status;
@@ -625,17 +700,30 @@ function renderList(){
   main.querySelectorAll(".notes-toggle").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
-      const ta = document.getElementById("notes-" + id);
+      const type = btn.getAttribute("data-type");
+      const ta = document.getElementById((type === "script" ? "script-" : "notes-") + id);
+      const lbl = document.getElementById("script-label-" + id);
       ta.classList.toggle("open");
+      if (lbl) lbl.classList.toggle("open");
       if (ta.classList.contains("open")) ta.focus();
     });
   });
   main.querySelectorAll("textarea.notes").forEach(ta => {
     ta.addEventListener("input", () => {
       const id = Number(ta.getAttribute("data-id"));
+      const type = ta.getAttribute("data-type");
       const val = ta.value;
-      clearTimeout(saveTimers[id]);
-      saveTimers[id] = setTimeout(() => updateItem(id, { notes: val }), 500);
+      clearTimeout(saveTimers[id + "_" + type]);
+      saveTimers[id + "_" + type] = setTimeout(() => {
+        if (type === "script") updateItem(id, { script_notes: val });
+        else updateItem(id, { notes: val });
+      }, 500);
+    });
+  });
+  main.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.getAttribute("data-id"));
+      deleteItem(id);
     });
   });
 }
@@ -645,8 +733,12 @@ function renderItem(item){
   const meta = STATUS_META[st.status];
   const isSaving = !!savingIds[item.id];
   const hasNote = !!st.notes;
+  const hasScript = !!st.script_notes;
+  const deleteBtn = isOwner ? 
+    `<button class="delete-btn" data-id="${item.id}" title="حذف الفكرة">🗑️</button>` : '';
+
   return `
-    <div class="item" style="border-color:${meta.bg === '#f3f4f6' ? 'var(--border)' : 'var(--border)'}">
+    <div class="item">
       <div class="item-row">
         <div class="item-id">#${item.id}</div>
         <div class="item-body">
@@ -654,12 +746,19 @@ function renderItem(item){
           <div class="item-meta">
             <span class="fmt-tag">${esc(item.fmt)}</span>
             ${isSaving ? `<span class="saving-tag">يحفظ...</span>` : ""}
-            <button class="notes-toggle${hasNote ? ' has-note':''}" data-id="${item.id}">
+            <button class="notes-toggle${hasNote ? ' has-note':''}" data-id="${item.id}" data-type="notes">
               ${hasNote ? "عرض/تعديل الملاحظة" : "+ إضافة ملاحظة"}
             </button>
+            <button class="notes-toggle${hasScript ? ' has-note':''}" data-id="${item.id}" data-type="script">
+              ${hasScript ? "عرض/تعديل السكريبت" : "+ إضافة سكريبت"}
+            </button>
+            ${deleteBtn}
           </div>
-          <textarea class="notes" id="notes-${item.id}" data-id="${item.id}"
+          <textarea class="notes" id="notes-${item.id}" data-id="${item.id}" data-type="notes"
             placeholder="ملاحظة أو تنبيه تحريري/أمني خاص بهذه الفكرة...">${esc(st.notes)}</textarea>
+          <div class="script-label" id="script-label-${item.id}">السكريبت:</div>
+          <textarea class="notes script-notes" id="script-${item.id}" data-id="${item.id}" data-type="script"
+            placeholder="اكتب هنا السكريبت الخاص بهذه الفكرة...">${esc(st.script_notes)}</textarea>
         </div>
         <div class="status-col">
           ${STATUSES.map(s => {
@@ -691,7 +790,7 @@ function updateItem(id, patch){
   renderAll();
 
   if (fb) {
-    const itemRef = fb.ref(fb.db, "tracker/" + id);
+    const itemRef = fb.ref(fb.db, "tracker/states/" + id);
     fb.update(itemRef, next).then(() => {
       delete savingIds[id];
       document.getElementById("saveError").style.display = "none";
@@ -704,12 +803,68 @@ function updateItem(id, patch){
   }
 }
 
+// ====== إضافة وحذف الأفكار (Owner فقط) ======
+function addItem(cat, idea, fmt) {
+  if (!isOwner || !fb) return;
+  const allItems = getAllItems();
+  const maxId = allItems.length > 0 ? Math.max(...allItems.map(i => i.id)) : 0;
+  const newId = maxId + 1;
+  const newItem = { id: newId, cat: cat.trim(), idea: idea.trim(), fmt: fmt.trim() };
+
+  const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + newId);
+  fb.set(itemRef, newItem).then(() => {
+    document.getElementById("saveError").style.display = "none";
+    // clear form
+    document.getElementById("newItemCat").value = "";
+    document.getElementById("newItemIdea").value = "";
+    document.getElementById("newItemFmt").value = "";
+    document.getElementById("addItemForm").classList.remove("open");
+  }).catch((err) => {
+    document.getElementById("saveError").style.display = "block";
+    console.error("Add item error:", err);
+  });
+}
+
+function deleteItem(id) {
+  if (!isOwner || !fb) return;
+  if (!confirm("هل أنت متأكد من حذف هذه الفكرة؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+
+  const isDynamic = dynamicItems.some(i => i.id === id);
+  if (isDynamic) {
+    const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + id);
+    fb.remove(itemRef).catch(err => console.error("Delete dynamic error:", err));
+  } else {
+    const delRef = fb.ref(fb.db, "tracker/deletedIds/" + id);
+    fb.set(delRef, true).catch(err => console.error("Delete static error:", err));
+  }
+
+  // clean up state
+  const stateRef = fb.ref(fb.db, "tracker/states/" + id);
+  fb.remove(stateRef).catch(err => console.error("Delete state error:", err));
+}
+
 document.getElementById("searchInput").addEventListener("input", (e) => {
   query = e.target.value;
   renderAll();
 });
 
-let dbListenerAttached = false;
+// ====== Owner UI ======
+document.getElementById("showAddForm").addEventListener("click", () => {
+  document.getElementById("addItemForm").classList.toggle("open");
+});
+document.getElementById("cancelAddItem").addEventListener("click", () => {
+  document.getElementById("addItemForm").classList.remove("open");
+});
+document.getElementById("saveNewItem").addEventListener("click", () => {
+  const cat = document.getElementById("newItemCat").value.trim();
+  const idea = document.getElementById("newItemIdea").value.trim();
+  const fmt = document.getElementById("newItemFmt").value.trim();
+  if (!cat || !idea || !fmt) {
+    alert("يرجى ملء جميع الحقول");
+    return;
+  }
+  addItem(cat, idea, fmt);
+});
 
 function showLogin(){
   document.getElementById("loading").style.display = "none";
@@ -720,20 +875,47 @@ function showLogin(){
 function attachDbListener(){
   if (dbListenerAttached) return;
   dbListenerAttached = true;
-  const trackerRef = fb.ref(fb.db, "tracker");
-  fb.onValue(trackerRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    state = data;
-    document.getElementById("connStatus").innerHTML =
-      '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
+
+  // تحميل الحالات
+  const statesRef = fb.ref(fb.db, "tracker/states");
+  fb.onValue(statesRef, (snapshot) => {
+    state = snapshot.val() || {};
     renderAll();
-  }, (error) => {
-    document.getElementById("connStatus").innerHTML =
-      '<span class="dot bad"></span><span>تعذّر قراءة البيانات — تحقق من صلاحيات الحساب</span>';
+  }, (err) => {
+    console.error("States listener error:", err);
   });
+
+  // تحميل الأفكار الديناميكية
+  const dynRef = fb.ref(fb.db, "tracker/dynamicItems");
+  fb.onValue(dynRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    dynamicItems = Object.values(data);
+    renderAll();
+  }, (err) => {
+    console.error("Dynamic items listener error:", err);
+  });
+
+  // تحميل المحذوفة
+  const delRef = fb.ref(fb.db, "tracker/deletedIds");
+  fb.onValue(delRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    deletedIds = new Set(Object.keys(data).map(Number));
+    renderAll();
+  }, (err) => {
+    console.error("Deleted ids listener error:", err);
+  });
+
+  document.getElementById("connStatus").innerHTML =
+    '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+
+  // Show owner UI if applicable
+  if (isOwner) {
+    document.getElementById("ownerBar").style.display = "flex";
+    document.getElementById("ownerBadge").style.display = "block";
+  }
 }
 
 function wireLoginForm(){
@@ -751,11 +933,11 @@ function wireLoginForm(){
         errBox.style.display = "block";
         let msg = "تعذّر تسجيل الدخول (" + error.code + ")";
         if (error.code === "auth/unauthorized-domain") {
-          msg = "هذا الموقع غير مُصرَّح له بتسجيل الدخول — أضف نطاقه في Firebase Console ضمن Authentication → Settings → Authorized domains.";
+          msg = "هذا الموقع غير مُصرَّح له بتسجيل الدخول — أضف نطاقه في Firebase Console.";
         } else if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
           msg = "الإيميل أو كلمة المرور غير صحيحة، أو الحساب غير موجود بعد في Firebase.";
         } else if (error.code === "auth/network-request-failed") {
-          msg = "تعذّر الاتصال بالشبكة — تأكد إن الأداة اللي بتجرّب عليها الملف مش بتحجب الاتصال بالإنترنت.";
+          msg = "تعذّر الاتصال بالشبكة — تأكد إن الأداة اللي بتجرّب عليها الملف مش بتحجب الاتصال.";
         }
         errBox.textContent = msg;
         console.error("Firebase auth error:", error.code, error.message);
@@ -775,7 +957,6 @@ function wireLoginForm(){
   });
 }
 
-// Wait for firebase module script to signal readiness
 window.addEventListener("firebase-ready", () => {
   fb = window.__fb;
   firebaseOk = true;
@@ -783,19 +964,22 @@ window.addEventListener("firebase-ready", () => {
 
   fb.onAuthStateChanged(fb.auth, (user) => {
     if (user) {
+      currentUser = user;
+      isOwner = OWNER_EMAILS.includes(user.email);
       attachDbListener();
     } else {
+      isOwner = false;
+      currentUser = null;
       showLogin();
     }
   });
 });
 
-// fallback: if firebase config fails to load entirely, show a clear error instead of hanging forever
 setTimeout(() => {
   if (!firebaseOk) {
     const hint = document.getElementById("loadingHint");
     if (hint) {
-      hint.textContent = "تعذّر الاتصال بـ Firebase (غالبًا بسبب حجب أداة الاختبار للاتصال بالإنترنت). جرّب فتح الصفحة على بلوجر مباشرة، أو افتح الملف بنفسه من جهازك (Double click)، وتأكد إنك أضفت نطاق الموقع في Authentication → Authorized domains.";
+      hint.textContent = "تعذّر الاتصال بـ Firebase (غالبًا بسبب حجب أداة الاختبار للاتصال بالإنترنت). جرّب فتح الصفحة على بلوجر مباشرة.";
     }
   }
 }, 5000);
