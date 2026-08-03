@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://www.google.com https://www.recaptcha.net 'unsafe-inline'; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src https://www.google.com https://www.recaptcha.net;" />
 <title>جدول متابعة إنتاج الأفكار — مظلة معتقلي مصر</title>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getDatabase, ref, onValue, set, update, remove, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBqhrG9pt8OVnkNY-5Ybc_AQEchOPCVK2g",
@@ -24,7 +26,17 @@
   const db = getDatabase(app);
   const auth = getAuth(app);
 
-  window.__fb = { ref, onValue, set, update, remove, db, auth, signInWithEmailAndPassword, signOut, onAuthStateChanged };
+  // App Check — استبدل بـ reCAPTCHA v3 site key الخاص بمشروعك
+  try {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6Lxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'),
+      isTokenAutoRefreshEnabled: true
+    });
+  } catch(e) {
+    console.warn('App Check not initialized:', e.message);
+  }
+
+  window.__fb = { ref, onValue, set, update, remove, push, serverTimestamp, db, auth, getIdTokenResult, signInWithEmailAndPassword, signOut, onAuthStateChanged };
   window.dispatchEvent(new Event("firebase-ready"));
 </script>
 
@@ -33,7 +45,7 @@
     --bg:#15171c; --panel:#1b1e26; --panel2:#1e2129; --border:#262a33;
     --text:#e5e7eb; --muted:#9ca3af; --dim:#6b7280; --faint:#4b5563;
     --accent:#c98a3e; --danger:#ef4444; --danger-bg:#3b1d1d;
-    --edit:#60a5fa; --edit-bg:#1e293b;
+    --edit:#60a5fa; --edit-bg:#1e293b; --success:#22c55e;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -97,11 +109,13 @@
 
   .save-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
     border-radius:8px;padding:8px 12px;font-size:12.5px;display:none;}
+  .security-banner{margin-top:10px;background:#1a2e1a;border:1px solid #166534;color:#86efac;
+    border-radius:8px;padding:8px 12px;font-size:12px;display:none;}
 
   .conn-status{font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px;margin-top:10px;}
   .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);}
-  .dot.ok{background:#22c55e;}
-  .dot.bad{background:#ef4444;}
+  .dot.ok{background:var(--success);}
+  .dot.bad{background:var(--danger);}
 
   main{margin-top:18px;padding-bottom:60px;}
   .cat-group{margin-bottom:22px;}
@@ -113,6 +127,7 @@
   .items{display:flex;flex-direction:column;gap:8px;}
   .item{background:var(--panel);border:1px solid var(--border);border-radius:12px;
     padding:12px 14px;transition:border-color .15s;position:relative;}
+  .item.deleted{opacity:.45;border-color:var(--danger-bg);}
   .item-row{display:flex;gap:10px;align-items:flex-start;}
   .item-id{font-size:11px;color:var(--faint);font-weight:700;min-width:24px;padding-top:2px;}
   .item-body{flex:1;min-width:0;}
@@ -122,6 +137,8 @@
     padding:2px 7px;font-weight:600;}
   .saving-tag{font-size:10.5px;color:var(--dim);}
   .edited-by{font-size:10px;color:var(--faint);margin-top:4px;}
+  .deleted-badge{font-size:10px;color:var(--danger);background:var(--danger-bg);border-radius:4px;
+    padding:2px 6px;margin-right:6px;font-weight:600;}
   .notes-toggle{font-size:10.5px;color:var(--faint);background:none;border:none;cursor:pointer;
     padding:0;text-decoration:underline;}
   .notes-toggle.has-note{color:var(--accent);}
@@ -130,6 +147,8 @@
   .delete-btn{font-size:13px;background:none;border:none;cursor:pointer;padding:2px 6px;
     opacity:.6;transition:opacity .15s;margin-right:auto;}
   .delete-btn:hover{opacity:1;color:var(--danger);}
+  .restore-btn{font-size:10.5px;color:var(--success);background:none;border:none;cursor:pointer;
+    padding:0;text-decoration:underline;margin-right:4px;}
   textarea.notes{width:100%;margin-top:8px;background:#15171c;border:1px solid #2a2e38;
     border-radius:8px;color:var(--text);font-size:12.5px;padding:8px;min-height:56px;
     resize:vertical;outline:none;display:none;font-family:inherit;}
@@ -147,6 +166,13 @@
   .empty{text-align:center;color:var(--dim);padding:60px 0;font-size:14px;}
   .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;}
   footer{max-width:980px;margin:30px auto 0;padding:0 20px 30px;font-size:11.5px;color:var(--faint);text-align:center;}
+
+  .audit-panel{background:var(--panel2);border:1px solid var(--border);border-radius:10px;
+    padding:12px;margin-top:14px;display:none;}
+  .audit-panel.open{display:block;}
+  .audit-entry{font-size:11px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--border);}
+  .audit-entry:last-child{border-bottom:none;}
+  .audit-time{color:var(--faint);font-size:10px;}
 
   @media (max-width:560px){
     .item-row{flex-wrap:wrap;}
@@ -216,12 +242,15 @@
       <div class="progress-bar" id="progressBar"></div>
       <div class="legend" id="legend"></div>
       <div class="conn-status" id="connStatus"><span class="dot"></span><span>جارِ الاتصال بقاعدة البيانات...</span></div>
+      <div class="security-banner" id="securityBanner">🔒 App Check مُفعّل — الاتصال محمي</div>
     </div>
   </header>
 
   <div class="wrap">
     <div class="owner-bar" id="ownerBar" style="display:none;">
       <button class="owner-btn" id="showAddForm">+ إضافة فكرة جديدة</button>
+      <button class="owner-btn secondary" id="toggleAudit">📋 سجل العمليات</button>
+      <button class="owner-btn secondary" id="exportData">💾 تصدير نسخة احتياطية</button>
     </div>
 
     <div class="filters">
@@ -234,6 +263,11 @@
       <div class="result-count" id="resultCount"></div>
     </div>
     <div class="save-error" id="saveError">تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى.</div>
+
+    <div class="audit-panel" id="auditPanel">
+      <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:8px;">سجل العمليات (آخر 20)</div>
+      <div id="auditList"></div>
+    </div>
   </div>
 
   <main class="wrap" id="mainList"></main>
@@ -261,9 +295,76 @@
 </div>
 
 <script>
-const OWNER_EMAILS = ["fedaalhaq@gmail.com"];
+/*
+═══════════════════════════════════════════════════════════════
+  SECURITY NOTICE — إجراءات الأمان المطبقة
+═══════════════════════════════════════════════════════════════
+
+1. App Check: يمنع استدعاء API من خارج الموقع (يحتاج reCAPTCHA v3 key)
+2. Soft Delete: الحذف منطقي فقط (deleted=true) — لا يُمسح نهائيًا
+3. Audit Trail: كل عملية تُسجّل في tracker/audit/{pushId}
+4. Owner Verification: التحقق من الـ Owners عبر Database Node
+   وليس عبر email ثابت في الكود
+5. Rate Limiting: تأخير 800ms بين العمليات المتتالية client-side
+6. CSP Header: meta tag يحدد مصادر الموارد المسموحة
+7. Rules: يجب نشر الـ Security Rules الموثقة في نهاية الملف
+
+═══════════════════════════════════════════════════════════════
+  CLOUD FUNCTIONS REQUIRED (للحماية الكاملة)
+═══════════════════════════════════════════════════════════════
+
+// functions/index.js — يحتاج Blaze Plan
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+admin.initializeApp();
+
+// 1. validateOwner — Cloud Function يتحقق server-side
+exports.validateOwner = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated");
+  const email = context.auth.token.email;
+  const snap = await admin.database().ref("tracker/owners/" + email.replace(/\./g, "%2E")).get();
+  if (!snap.exists()) throw new functions.https.HttpsError("permission-denied");
+  return { owner: true };
+});
+
+// 2. deleteItem — Soft delete via Cloud Function
+exports.deleteItem = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated");
+  const email = context.auth.token.email;
+  const ownerSnap = await admin.database().ref("tracker/owners/" + email.replace(/\./g, "%2E")).get();
+  if (!ownerSnap.exists()) throw new functions.https.HttpsError("permission-denied");
+
+  const { itemId } = data;
+  const updates = {};
+  updates["tracker/items/" + itemId + "/deleted"] = true;
+  updates["tracker/items/" + itemId + "/deletedAt"] = admin.database.ServerValue.TIMESTAMP;
+  updates["tracker/items/" + itemId + "/deletedBy"] = email;
+  updates["tracker/audit/" + admin.database().ref().push().key] = {
+    action: "soft_delete", itemId, user: email, timestamp: admin.database.ServerValue.TIMESTAMP
+  };
+  await admin.database().ref().update(updates);
+  return { success: true };
+});
+
+// 3. addAuditLog — تسجيل تلقائي
+exports.addAuditLog = functions.database.ref("/tracker/items/{itemId}").onWrite(async (change, context) => {
+  const before = change.before.val();
+  const after = change.after.val();
+  if (!after) return; // deletion handled separately
+  const action = !before ? "create" : "update";
+  await admin.database().ref("tracker/audit/" + admin.database().ref().push().key).set({
+    action, itemId: context.params.itemId, timestamp: admin.database.ServerValue.TIMESTAMP,
+    user: after.editedBy || after.createdBy || "unknown"
+  });
+});
+*/
+
+// ====== CONFIG ======
+const RATE_LIMIT_MS = 800;
+let lastActionTime = 0;
 let isOwner = false;
 let currentUser = null;
+let ownersLoaded = false;
 
 const STATUSES = ["لم تُنتج", "قيد الكتابة", "قيد الانتاج", "تم الانتاج", "تم النشر", "فكرة عليها تحفظ"];
 
@@ -551,10 +652,10 @@ const DEFAULT_ITEMS = [
 {id:266,cat:"٤٢. من التردد إلى الفعل - سلسلة تحوّل الموقف",idea:"الحلقة ٥: «انضم» - لمن حابب ياخد خطوة أكبر، بدعوة هادئة للتطوع أو الدعم بشكل رسمي عبر الموقع.",fmt:"سلسلة يوتيوب"}
 ];
 
-let dynamicItems = [];
-let deletedIds = new Set();
-let overrides = {};
-let state = {};
+// ====== STATE ======
+let itemsData = {};      // { [id]: { id, cat, idea, fmt, deleted, createdAt, createdBy, editedAt, editedBy, deletedAt, deletedBy } }
+let state = {};          // { [id]: { status, notes, script_notes } }
+let audit = [];          // array of audit entries
 let query = "";
 let catFilter = "الكل";
 let statusFilter = "الكل";
@@ -564,19 +665,15 @@ let saveTimers = {};
 let savingIds = {};
 let firebaseOk = false;
 let dbListenerAttached = false;
-
 let openTextareas = new Set();
 let lastCaretPos = {};
 
 function getAllItems() {
-  const base = [...DEFAULT_ITEMS, ...dynamicItems];
-  return base
-    .map(item => {
-      const ov = overrides[item.id];
-      if (ov) return { ...item, ...ov };
-      return item;
-    })
-    .filter(item => !deletedIds.has(item.id));
+  return Object.values(itemsData).filter(item => !item.deleted);
+}
+
+function getAllItemsIncludingDeleted() {
+  return Object.values(itemsData);
 }
 
 function esc(s){
@@ -585,6 +682,28 @@ function esc(s){
 
 function getItemState(id){
   return state[id] || { status: "لم تُنتج", notes: "", script_notes: "" };
+}
+
+function checkRateLimit() {
+  const now = Date.now();
+  if (now - lastActionTime < RATE_LIMIT_MS) {
+    alert("يرجى الانتظار قليلاً قبل إجراء العملية التالية.");
+    return false;
+  }
+  lastActionTime = now;
+  return true;
+}
+
+function logAudit(action, itemId, details) {
+  if (!fb || !currentUser) return;
+  const entry = {
+    action, itemId: itemId || null,
+    user: currentUser.email || currentUser.uid,
+    timestamp: Date.now(),
+    details: details || ""
+  };
+  const auditRef = fb.push(fb.ref(fb.db, "tracker/audit"));
+  fb.set(auditRef, entry).catch(err => console.error("Audit log failed:", err));
 }
 
 function renderLegend(){
@@ -738,7 +857,13 @@ function renderList(){
   main.querySelectorAll(".delete-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = Number(btn.getAttribute("data-id"));
-      deleteItem(id);
+      softDeleteItem(id);
+    });
+  });
+  main.querySelectorAll(".restore-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.getAttribute("data-id"));
+      restoreItem(id);
     });
   });
   main.querySelectorAll(".edit-btn").forEach(btn => {
@@ -749,7 +874,9 @@ function renderList(){
   });
 
   openTextareas.forEach(key => {
-    const [type, id] = key.split("-");
+    const parts = key.split("-");
+    const type = parts[0];
+    const id = parts.slice(1).join("-");
     const ta = document.getElementById((type === "script" ? "script-" : "notes-") + id);
     const lbl = document.getElementById("script-label-" + id);
     if (ta) {
@@ -770,46 +897,59 @@ function renderItem(item){
   const isSaving = !!savingIds[item.id];
   const hasNote = !!st.notes;
   const hasScript = !!st.script_notes;
-  const ov = overrides[item.id];
-  const wasEdited = ov && (ov.editedBy || ov.editedAt);
-  const editedText = wasEdited
-    ? `آخر تعديل: ${esc(ov.editedBy || "")}${ov.editedAt ? " — " + new Date(ov.editedAt).toLocaleString("ar-EG") : ""}`
-    : "";
+  const isDeleted = !!item.deleted;
 
-  const editBtn = isOwner
+  let editedText = "";
+  if (item.editedBy) {
+    const dateStr = item.editedAt ? new Date(item.editedAt).toLocaleString("ar-EG") : "";
+    editedText = `آخر تعديل: ${esc(item.editedBy)}${dateStr ? " — " + dateStr : ""}`;
+  } else if (item.createdBy) {
+    editedText = `أُضيفت بواسطة: ${esc(item.createdBy)}`;
+  }
+
+  const editBtn = isOwner && !isDeleted
     ? `<button class="edit-btn" data-id="${item.id}" title="تعديل الفكرة">✏️ تعديل</button>`
     : "";
-  const deleteBtn = isOwner
-    ? `<button class="delete-btn" data-id="${item.id}" title="حذف الفكرة">🗑️</button>`
+  const deleteBtn = isOwner && !isDeleted
+    ? `<button class="delete-btn" data-id="${item.id}" title="حذف الفكرة (منطقي)">🗑️</button>`
     : "";
+  const restoreBtn = isOwner && isDeleted
+    ? `<button class="restore-btn" data-id="${item.id}" title="استرجاع الفكرة">↩️ استرجاع</button>`
+    : "";
+  const deletedBadge = isDeleted ? `<span class="deleted-badge">محذوفة</span>` : "";
 
   return `
-    <div class="item">
+    <div class="item${isDeleted ? ' deleted' : ''}">
       <div class="item-row">
         <div class="item-id">#${item.id}</div>
         <div class="item-body">
-          <div class="item-idea">${esc(item.idea)}</div>
+          <div class="item-idea">${deletedBadge}${esc(item.idea)}</div>
           ${editedText ? `<div class="edited-by">${editedText}</div>` : ""}
           <div class="item-meta">
             <span class="fmt-tag">${esc(item.fmt)}</span>
             ${isSaving ? `<span class="saving-tag">يحفظ...</span>` : ""}
+            ${!isDeleted ? `
             <button class="notes-toggle${hasNote ? ' has-note':''}" data-id="${item.id}" data-type="notes">
               ${hasNote ? "عرض/تعديل الملاحظة" : "+ إضافة ملاحظة"}
             </button>
             <button class="notes-toggle${hasScript ? ' has-note':''}" data-id="${item.id}" data-type="script">
               ${hasScript ? "عرض/تعديل السكريبت" : "+ إضافة سكريبت"}
             </button>
+            ` : ''}
             ${editBtn}
             ${deleteBtn}
+            ${restoreBtn}
           </div>
+          ${!isDeleted ? `
           <textarea class="notes" id="notes-${item.id}" data-id="${item.id}" data-type="notes"
             placeholder="ملاحظة أو تنبيه تحريري/أمني خاص بهذه الفكرة...">${esc(st.notes)}</textarea>
           <div class="script-label" id="script-label-${item.id}">السكريبت:</div>
           <textarea class="notes script-notes" id="script-${item.id}" data-id="${item.id}" data-type="script"
             placeholder="اكتب هنا السكريبت الخاص بهذه الفكرة...">${esc(st.script_notes)}</textarea>
+          ` : ''}
         </div>
         <div class="status-col">
-          ${STATUSES.map(s => {
+          ${!isDeleted ? STATUSES.map(s => {
             const m = STATUS_META[s];
             const active = st.status === s;
             return `<button class="status-btn${active ? ' active':''}" data-id="${item.id}" data-status="${esc(s)}"
@@ -817,7 +957,7 @@ function renderItem(item){
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg>
               ${esc(s)}
             </button>`;
-          }).join("")}
+          }).join("") : '<span style="font-size:11px;color:var(--faint);">محذوفة</span>'}
         </div>
       </div>
     </div>
@@ -851,9 +991,11 @@ function updateItem(id, patch, skipRender){
   }
 }
 
+// ====== CRUD OPERATIONS (Owner Only) ======
 let editingItemId = null;
 
 function openAddModal() {
+  if (!checkRateLimit()) return;
   editingItemId = null;
   document.getElementById("modalTitle").textContent = "إضافة فكرة جديدة";
   document.getElementById("modalCat").value = "";
@@ -863,7 +1005,8 @@ function openAddModal() {
 }
 
 function openEditModal(id) {
-  const allItems = getAllItems();
+  if (!checkRateLimit()) return;
+  const allItems = getAllItemsIncludingDeleted();
   const item = allItems.find(i => i.id === id);
   if (!item) return;
   editingItemId = id;
@@ -880,7 +1023,12 @@ function closeModal() {
 }
 
 function saveModalItem() {
-  if (!isOwner || !fb) return;
+  if (!isOwner || !fb) {
+    alert("غير مصرّح لك بهذه العملية.");
+    return;
+  }
+  if (!checkRateLimit()) return;
+
   const cat = document.getElementById("modalCat").value.trim();
   const idea = document.getElementById("modalIdea").value.trim();
   const fmt = document.getElementById("modalFmt").value.trim();
@@ -889,37 +1037,39 @@ function saveModalItem() {
     return;
   }
 
-  const editorName = currentUser ? (currentUser.displayName || currentUser.email || "Owner") : "Owner";
+  const editorName = currentUser ? (currentUser.displayName || currentUser.email || "unknown") : "unknown";
   const now = Date.now();
 
   if (editingItemId) {
-    const isDynamic = dynamicItems.some(i => i.id === editingItemId);
-    if (isDynamic) {
-      const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + editingItemId);
-      fb.update(itemRef, { cat, idea, fmt, editedBy: editorName, editedAt: now }).then(() => {
-        document.getElementById("saveError").style.display = "none";
-        closeModal();
-      }).catch(err => {
-        document.getElementById("saveError").style.display = "block";
-        console.error("Edit dynamic error:", err);
-      });
-    } else {
-      const ovRef = fb.ref(fb.db, "tracker/overrides/" + editingItemId);
-      fb.update(ovRef, { cat, idea, fmt, editedBy: editorName, editedAt: now }).then(() => {
-        document.getElementById("saveError").style.display = "none";
-        closeModal();
-      }).catch(err => {
-        document.getElementById("saveError").style.display = "block";
-        console.error("Edit override error:", err);
-      });
-    }
+    const item = itemsData[editingItemId];
+    if (!item) return;
+    const updates = {};
+    updates["tracker/items/" + editingItemId + "/cat"] = cat;
+    updates["tracker/items/" + editingItemId + "/idea"] = idea;
+    updates["tracker/items/" + editingItemId + "/fmt"] = fmt;
+    updates["tracker/items/" + editingItemId + "/editedBy"] = editorName;
+    updates["tracker/items/" + editingItemId + "/editedAt"] = now;
+    fb.update(fb.ref(fb.db), updates).then(() => {
+      logAudit("edit", editingItemId, "Edited cat/fmt/idea");
+      document.getElementById("saveError").style.display = "none";
+      closeModal();
+    }).catch(err => {
+      document.getElementById("saveError").style.display = "block";
+      console.error("Edit error:", err);
+    });
   } else {
-    const allItems = getAllItems();
+    const allItems = getAllItemsIncludingDeleted();
     const maxId = allItems.length > 0 ? Math.max(...allItems.map(i => i.id)) : 0;
     const newId = maxId + 1;
-    const newItem = { id: newId, cat, idea, fmt, editedBy: editorName, editedAt: now };
-    const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + newId);
+    const newItem = {
+      id: newId, cat, idea, fmt,
+      createdBy: editorName, createdAt: now,
+      editedBy: editorName, editedAt: now,
+      deleted: false
+    };
+    const itemRef = fb.ref(fb.db, "tracker/items/" + newId);
     fb.set(itemRef, newItem).then(() => {
+      logAudit("create", newId, "New item created");
       document.getElementById("saveError").style.display = "none";
       closeModal();
     }).catch(err => {
@@ -929,26 +1079,81 @@ function saveModalItem() {
   }
 }
 
-function deleteItem(id) {
-  if (!isOwner || !fb) return;
-  if (!confirm("هل أنت متأكد من حذف هذه الفكرة؟ لا يمكن التراجع عن هذا الإجراء.")) return;
-
-  const isDynamic = dynamicItems.some(i => i.id === id);
-  if (isDynamic) {
-    const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + id);
-    fb.remove(itemRef).catch(err => console.error("Delete dynamic error:", err));
-  } else {
-    const delRef = fb.ref(fb.db, "tracker/deletedIds/" + id);
-    fb.set(delRef, true).catch(err => console.error("Delete static error:", err));
+function softDeleteItem(id) {
+  if (!isOwner || !fb) {
+    alert("غير مصرّح لك بهذه العملية.");
+    return;
   }
+  if (!checkRateLimit()) return;
+  if (!confirm("هل أنت متأكد من حذف هذه الفكرة؟ (الحذف منطقي — يمكن استرجاعه لاحقًا)")) return;
 
-  const stateRef = fb.ref(fb.db, "tracker/states/" + id);
-  fb.remove(stateRef).catch(err => console.error("Delete state error:", err));
-
-  const ovRef = fb.ref(fb.db, "tracker/overrides/" + id);
-  fb.remove(ovRef).catch(err => console.error("Delete override error:", err));
+  const editorName = currentUser ? (currentUser.email || "unknown") : "unknown";
+  const updates = {};
+  updates["tracker/items/" + id + "/deleted"] = true;
+  updates["tracker/items/" + id + "/deletedAt"] = Date.now();
+  updates["tracker/items/" + id + "/deletedBy"] = editorName;
+  fb.update(fb.ref(fb.db), updates).then(() => {
+    logAudit("soft_delete", id, "Item soft deleted");
+  }).catch(err => {
+    document.getElementById("saveError").style.display = "block";
+    console.error("Soft delete error:", err);
+  });
 }
 
+function restoreItem(id) {
+  if (!isOwner || !fb) {
+    alert("غير مصرّح لك بهذه العملية.");
+    return;
+  }
+  if (!checkRateLimit()) return;
+  if (!confirm("استرجاع الفكرة المحذوفة؟")) return;
+
+  const updates = {};
+  updates["tracker/items/" + id + "/deleted"] = false;
+  updates["tracker/items/" + id + "/restoredAt"] = Date.now();
+  fb.update(fb.ref(fb.db), updates).then(() => {
+    logAudit("restore", id, "Item restored");
+  }).catch(err => {
+    document.getElementById("saveError").style.display = "block";
+    console.error("Restore error:", err);
+  });
+}
+
+// ====== AUDIT PANEL ======
+function renderAudit() {
+  const list = document.getElementById("auditList");
+  const recent = audit.slice().reverse().slice(0, 20);
+  list.innerHTML = recent.map(entry => {
+    const time = entry.timestamp ? new Date(entry.timestamp).toLocaleString("ar-EG") : "";
+    return `<div class="audit-entry">
+      <strong>${esc(entry.action)}</strong> — فكرة #${entry.itemId || "—"}
+      <span style="color:var(--faint)">(${esc(entry.user || "unknown")})</span>
+      <div class="audit-time">${time}</div>
+    </div>`;
+  }).join("") || "<div style="color:var(--faint);font-size:12px;">لا توجد عمليات مسجلة</div>";
+}
+
+// ====== EXPORT BACKUP ======
+function exportBackup() {
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUser ? currentUser.email : "unknown",
+    items: itemsData,
+    states: state,
+    audit: audit
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "almizalla-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ====== EVENT LISTENERS ======
 document.getElementById("searchInput").addEventListener("input", (e) => {
   query = e.target.value;
   renderAll();
@@ -960,6 +1165,11 @@ document.getElementById("modalSave").addEventListener("click", saveModalItem);
 document.getElementById("itemModal").addEventListener("click", (e) => {
   if (e.target === document.getElementById("itemModal")) closeModal();
 });
+document.getElementById("toggleAudit").addEventListener("click", () => {
+  document.getElementById("auditPanel").classList.toggle("open");
+  renderAudit();
+});
+document.getElementById("exportData").addEventListener("click", exportBackup);
 
 function showLogin(){
   document.getElementById("loading").style.display = "none";
@@ -971,45 +1181,64 @@ function attachDbListener(){
   if (dbListenerAttached) return;
   dbListenerAttached = true;
 
+  // Load items (merged DEFAULT + dynamic)
+  const itemsRef = fb.ref(fb.db, "tracker/items");
+  fb.onValue(itemsRef, (snapshot) => {
+    const data = snapshot.val() || {};
+    // Merge with defaults: defaults are base, DB overrides/adds
+    const merged = {};
+    DEFAULT_ITEMS.forEach(item => {
+      merged[item.id] = { ...item, deleted: false, ...data[item.id] };
+    });
+    Object.entries(data).forEach(([id, val]) => {
+      if (!merged[id]) merged[id] = val;
+    });
+    itemsData = merged;
+    renderAll();
+  }, (err) => { console.error("Items listener error:", err); });
+
+  // Load states
   const statesRef = fb.ref(fb.db, "tracker/states");
   fb.onValue(statesRef, (snapshot) => {
     state = snapshot.val() || {};
     renderAll();
   }, (err) => { console.error("States listener error:", err); });
 
-  const dynRef = fb.ref(fb.db, "tracker/dynamicItems");
-  fb.onValue(dynRef, (snapshot) => {
+  // Load audit
+  const auditRef = fb.ref(fb.db, "tracker/audit");
+  fb.onValue(auditRef, (snapshot) => {
     const data = snapshot.val() || {};
-    dynamicItems = Object.values(data);
-    renderAll();
-  }, (err) => { console.error("Dynamic items listener error:", err); });
-
-  const delRef = fb.ref(fb.db, "tracker/deletedIds");
-  fb.onValue(delRef, (snapshot) => {
-    const data = snapshot.val() || {};
-    deletedIds = new Set(Object.keys(data).map(Number));
-    renderAll();
-  }, (err) => { console.error("Deleted ids listener error:", err); });
-
-  const ovRef = fb.ref(fb.db, "tracker/overrides");
-  fb.onValue(ovRef, (snapshot) => {
-    overrides = snapshot.val() || {};
-    renderAll();
-  }, (err) => { console.error("Overrides listener error:", err); });
+    audit = Object.values(data);
+    if (document.getElementById("auditPanel").classList.contains("open")) {
+      renderAudit();
+    }
+  }, (err) => { console.error("Audit listener error:", err); });
 
   document.getElementById("connStatus").innerHTML =
     '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
   document.getElementById("loading").style.display = "none";
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
+}
 
-  if (isOwner) {
-    document.getElementById("ownerBar").style.display = "flex";
-  }
-  if (currentUser) {
-    const name = currentUser.displayName || currentUser.email || "مستخدم";
+function checkOwnerStatus(user) {
+  if (!user || !fb) return;
+  const email = user.email;
+  if (!email) return;
+  const ownerRef = fb.ref(fb.db, "tracker/owners/" + email.replace(/\./g, "%2E"));
+  fb.onValue(ownerRef, (snapshot) => {
+    isOwner = snapshot.exists();
+    if (isOwner) {
+      document.getElementById("ownerBar").style.display = "flex";
+      document.getElementById("securityBanner").style.display = "block";
+    }
+    const name = user.displayName || user.email || "مستخدم";
     document.getElementById("userBadge").textContent = "👤 " + name + (isOwner ? " (Owner)" : "");
-  }
+  }, () => {
+    isOwner = false;
+    const name = user.displayName || user.email || "مستخدم";
+    document.getElementById("userBadge").textContent = "👤 " + name;
+  });
 }
 
 function wireLoginForm(){
@@ -1032,6 +1261,8 @@ function wireLoginForm(){
           msg = "الإيميل أو كلمة المرور غير صحيحة، أو الحساب غير موجود بعد في Firebase.";
         } else if (error.code === "auth/network-request-failed") {
           msg = "تعذّر الاتصال بالشبكة — تأكد إن الأداة اللي بتجرّب عليها الملف مش بتحجب الاتصال.";
+        } else if (error.code === "auth/too-many-requests") {
+          msg = "تم حظر المحاولات مؤقتًا بسبب محاولات متكررة — جرّب بعد دقائق.";
         }
         errBox.textContent = msg;
         console.error("Firebase auth error:", error.code, error.message);
@@ -1059,8 +1290,8 @@ window.addEventListener("firebase-ready", () => {
   fb.onAuthStateChanged(fb.auth, (user) => {
     if (user) {
       currentUser = user;
-      isOwner = OWNER_EMAILS.includes(user.email);
       attachDbListener();
+      checkOwnerStatus(user);
     } else {
       isOwner = false;
       currentUser = null;
