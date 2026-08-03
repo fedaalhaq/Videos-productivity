@@ -33,6 +33,7 @@
     --bg:#15171c; --panel:#1b1e26; --panel2:#1e2129; --border:#262a33;
     --text:#e5e7eb; --muted:#9ca3af; --dim:#6b7280; --faint:#4b5563;
     --accent:#c98a3e; --danger:#ef4444; --danger-bg:#3b1d1d;
+    --edit:#60a5fa; --edit-bg:#1e293b;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
@@ -62,7 +63,6 @@
     border:1px solid #2a2e38;border-radius:20px;padding:5px 10px;cursor:pointer;
     color:var(--muted);font-size:12.5px;font-weight:600;transition:all .15s;}
   .chip .n{opacity:.7;font-weight:700;}
-  .chip.active{}
   .clear-filter{font-size:12px;color:var(--dim);background:none;border:none;cursor:pointer;text-decoration:underline;}
 
   .filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:flex-start;}
@@ -80,17 +80,20 @@
   .owner-btn:hover{opacity:.9;}
   .owner-btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
 
-  .add-form{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;display:none;}
-  .add-form.open{display:block;}
-  .add-form h3{margin:0 0 12px;font-size:15px;color:var(--accent);}
-  .form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
-  .form-row input, .form-row textarea{background:var(--bg);border:1px solid #2a2e38;border-radius:8px;
-    padding:9px 12px;color:var(--text);font-size:13px;outline:none;flex:1;}
-  .form-row textarea{min-height:60px;resize:vertical;width:100%;}
-  .form-actions{display:flex;gap:8px;justify-content:flex-end;}
-  .form-actions button{padding:7px 16px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;}
-  .form-actions .save-btn{background:var(--accent);color:#1b1204;}
-  .form-actions .cancel-btn{background:var(--panel);color:var(--text);border:1px solid var(--border);}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;
+    align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;
+    max-width:520px;width:100%;max-height:90vh;overflow-y:auto;}
+  .modal h3{margin:0 0 16px;font-size:16px;color:var(--accent);}
+  .modal .form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+  .modal .form-row input, .modal .form-row textarea{background:var(--bg);border:1px solid #2a2e38;border-radius:8px;
+    padding:9px 12px;color:var(--text);font-size:13px;outline:none;flex:1;min-width:200px;}
+  .modal .form-row textarea{min-height:80px;resize:vertical;width:100%;flex:none;}
+  .modal .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+  .modal .form-actions button{padding:7px 16px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;}
+  .modal .form-actions .save-btn{background:var(--accent);color:#1b1204;}
+  .modal .form-actions .cancel-btn{background:var(--panel);color:var(--text);border:1px solid var(--border);}
 
   .save-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
     border-radius:8px;padding:8px 12px;font-size:12.5px;display:none;}
@@ -118,9 +121,12 @@
   .fmt-tag{font-size:10.5px;color:var(--muted);background:var(--border);border-radius:5px;
     padding:2px 7px;font-weight:600;}
   .saving-tag{font-size:10.5px;color:var(--dim);}
+  .edited-by{font-size:10px;color:var(--faint);margin-top:4px;}
   .notes-toggle{font-size:10.5px;color:var(--faint);background:none;border:none;cursor:pointer;
     padding:0;text-decoration:underline;}
   .notes-toggle.has-note{color:var(--accent);}
+  .edit-btn{font-size:10.5px;color:var(--edit);background:none;border:none;cursor:pointer;
+    padding:0;text-decoration:underline;margin-right:4px;}
   .delete-btn{font-size:13px;background:none;border:none;cursor:pointer;padding:2px 6px;
     opacity:.6;transition:opacity .15s;margin-right:auto;}
   .delete-btn:hover{opacity:1;color:var(--danger);}
@@ -145,7 +151,7 @@
   @media (max-width:560px){
     .item-row{flex-wrap:wrap;}
     .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:6px;}
-    .form-row{flex-direction:column;}
+    .modal .form-row{flex-direction:column;}
   }
 </style>
 </head>
@@ -190,7 +196,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
       <button id="logoutBtn" style="background:none;border:1px solid var(--border);color:var(--dim);
         border-radius:8px;padding:5px 12px;font-size:11.5px;cursor:pointer;">تسجيل الخروج</button>
-      <div id="ownerBadge" style="display:none;font-size:11px;color:var(--accent);font-weight:600;">👤 Owner</div>
+      <div id="userBadge" style="font-size:11px;color:var(--muted);"></div>
     </div>
     <div style="clear:both;"></div>
   </div>
@@ -218,21 +224,6 @@
       <button class="owner-btn" id="showAddForm">+ إضافة فكرة جديدة</button>
     </div>
 
-    <div class="add-form" id="addItemForm">
-      <h3>إضافة فكرة جديدة</h3>
-      <div class="form-row">
-        <input id="newItemCat" placeholder="المحور / التصنيف" style="flex:1;min-width:200px;" />
-        <input id="newItemFmt" placeholder="الصيغة (مثال: ريلز, يوتيوب)" style="flex:1;min-width:180px;" />
-      </div>
-      <div class="form-row">
-        <textarea id="newItemIdea" placeholder="نص الفكرة بالتفصيل..."></textarea>
-      </div>
-      <div class="form-actions">
-        <button class="cancel-btn" id="cancelAddItem">إلغاء</button>
-        <button class="save-btn" id="saveNewItem">حفظ الفكرة</button>
-      </div>
-    </div>
-
     <div class="filters">
       <div class="search-box">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -248,18 +239,32 @@
   <main class="wrap" id="mainList"></main>
 
   <footer>
-    التحديثات تُحفظ تلقائيًا وتظهر لحظيًا لكل من يفتح هذه الصفحة — راجع «طريقة الاستخدام» الأصلية قبل التعديل الجماعي.
+    التحديثات تُحفظ تلقائيًا وتظهر لحظيًا لكل من يفتح هذه الصفحة.
   </footer>
 </div>
 
+<div class="modal-overlay" id="itemModal">
+  <div class="modal">
+    <h3 id="modalTitle">إضافة فكرة جديدة</h3>
+    <div class="form-row">
+      <input id="modalCat" placeholder="المحور / التصنيف" style="flex:1;min-width:200px;" />
+      <input id="modalFmt" placeholder="الصيغة (مثال: ريلز, يوتيوب)" style="flex:1;min-width:180px;" />
+    </div>
+    <div class="form-row">
+      <textarea id="modalIdea" placeholder="نص الفكرة بالتفصيل..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="cancel-btn" id="modalCancel">إلغاء</button>
+      <button class="save-btn" id="modalSave">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ====== إعدادات الصلاحيات ======
-// عدّل هذا الإيميل لإيميل الـ Owner
-const OWNER_EMAILS = ["fedaalhaq@gmail.com"];
+const OWNER_EMAILS = ["owner@almizalla.org"];
 let isOwner = false;
 let currentUser = null;
 
-// ====== الحالات المُحدَّثة ======
 const STATUSES = ["لم تُنتج", "قيد الكتابة", "قيد الانتاج", "تم الانتاج", "تم النشر", "فكرة عليها تحفظ"];
 
 const STATUS_META = {
@@ -277,7 +282,6 @@ const STATUS_META = {
     icon:'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' },
 };
 
-// ====== الأفكار الافتراضية (الثابتة) ======
 const DEFAULT_ITEMS = [
 {id:1,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة يوتيوب كاملة تجيب بالترتيب على: ماذا (تعريف المظلة) - لماذا (سبب التأسيس) - أين (نطاق العمل) - متى (التوقيت والمراحل) - كيف (آلية العمل بالمحاور الخمسة) - من (بدون كشف هويات، وصف عام لطبيعة القائمين)، وتختم بالرؤية والرسالة والقيم الحاكمة.",fmt:"ريلز + يوتيوب"},
 {id:2,cat:"١. الفيديو التعريفي بالمظلة",idea:"نسخة ريلز ٦٠ ثانية: تركز فقط على «لماذا» و«إزاي تقدر تساعد»، لأن ده اللي بيوقف السكرول، مع CTA واضح في آخر ٥ ثواني.",fmt:"ريلز + يوتيوب"},
@@ -547,10 +551,10 @@ const DEFAULT_ITEMS = [
 {id:266,cat:"٤٢. من التردد إلى الفعل - سلسلة تحوّل الموقف",idea:"الحلقة ٥: «انضم» - لمن حابب ياخد خطوة أكبر، بدعوة هادئة للتطوع أو الدعم بشكل رسمي عبر الموقع.",fmt:"سلسلة يوتيوب"}
 ];
 
-// ====== بيانات ديناميكية من Firebase ======
 let dynamicItems = [];
 let deletedIds = new Set();
-let state = {};      // { [id]: { status, notes, script_notes } }
+let overrides = {};
+let state = {};
 let query = "";
 let catFilter = "الكل";
 let statusFilter = "الكل";
@@ -561,9 +565,18 @@ let savingIds = {};
 let firebaseOk = false;
 let dbListenerAttached = false;
 
+let openTextareas = new Set();
+let lastCaretPos = {};
+
 function getAllItems() {
   const base = [...DEFAULT_ITEMS, ...dynamicItems];
-  return base.filter(item => !deletedIds.has(item.id));
+  return base
+    .map(item => {
+      const ov = overrides[item.id];
+      if (ov) return { ...item, ...ov };
+      return item;
+    })
+    .filter(item => !deletedIds.has(item.id));
 }
 
 function esc(s){
@@ -619,32 +632,25 @@ function renderFilters(){
   const fmts = [...new Set(allItems.map(i => i.fmt))];
 
   const catSel = document.getElementById("catFilter");
-  if (!catSel.dataset.built) {
-    catSel.innerHTML = `<option value="الكل">كل المحاور</option>` +
-      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-    catSel.dataset.built = "1";
+  const currentCat = catSel.value || "الكل";
+  catSel.innerHTML = `<option value="الكل">كل المحاور</option>` +
+    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  catSel.value = cats.includes(currentCat) ? currentCat : "الكل";
+  if (catSel.value !== currentCat) catFilter = catSel.value;
+  if (!catSel.dataset.wired) {
     catSel.addEventListener("change", () => { catFilter = catSel.value; renderAll(); });
-  } else {
-    // refresh options if needed
-    const currentVal = catSel.value;
-    catSel.innerHTML = `<option value="الكل">كل المحاور</option>` +
-      cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
-    catSel.value = cats.includes(currentVal) ? currentVal : "الكل";
-    if (catSel.value !== currentVal) catFilter = catSel.value;
+    catSel.dataset.wired = "1";
   }
 
   const fmtSel = document.getElementById("fmtFilter");
-  if (!fmtSel.dataset.built) {
-    fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
-      fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
-    fmtSel.dataset.built = "1";
+  const currentFmt = fmtSel.value || "الكل";
+  fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
+    fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
+  fmtSel.value = fmts.includes(currentFmt) ? currentFmt : "الكل";
+  if (fmtSel.value !== currentFmt) fmtFilter = fmtSel.value;
+  if (!fmtSel.dataset.wired) {
     fmtSel.addEventListener("change", () => { fmtFilter = fmtSel.value; renderAll(); });
-  } else {
-    const currentVal = fmtSel.value;
-    fmtSel.innerHTML = `<option value="الكل">كل الصيغ</option>` +
-      fmts.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("");
-    fmtSel.value = fmts.includes(currentVal) ? currentVal : "الكل";
-    if (fmtSel.value !== currentVal) fmtFilter = fmtSel.value;
+    fmtSel.dataset.wired = "1";
   }
 }
 
@@ -689,7 +695,6 @@ function renderList(){
     </div>
   `).join("");
 
-  // wire up events
   main.querySelectorAll(".status-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = Number(btn.getAttribute("data-id"));
@@ -701,11 +706,19 @@ function renderList(){
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-id");
       const type = btn.getAttribute("data-type");
+      const key = type + "-" + id;
       const ta = document.getElementById((type === "script" ? "script-" : "notes-") + id);
       const lbl = document.getElementById("script-label-" + id);
-      ta.classList.toggle("open");
-      if (lbl) lbl.classList.toggle("open");
-      if (ta.classList.contains("open")) ta.focus();
+      if (ta.classList.contains("open")) {
+        ta.classList.remove("open");
+        openTextareas.delete(key);
+        if (lbl) lbl.classList.remove("open");
+      } else {
+        ta.classList.add("open");
+        openTextareas.add(key);
+        if (lbl) lbl.classList.add("open");
+        ta.focus();
+      }
     });
   });
   main.querySelectorAll("textarea.notes").forEach(ta => {
@@ -713,11 +726,13 @@ function renderList(){
       const id = Number(ta.getAttribute("data-id"));
       const type = ta.getAttribute("data-type");
       const val = ta.value;
-      clearTimeout(saveTimers[id + "_" + type]);
-      saveTimers[id + "_" + type] = setTimeout(() => {
-        if (type === "script") updateItem(id, { script_notes: val });
-        else updateItem(id, { notes: val });
-      }, 500);
+      const key = type + "-" + id;
+      lastCaretPos[key] = ta.selectionStart;
+      clearTimeout(saveTimers[key]);
+      saveTimers[key] = setTimeout(() => {
+        if (type === "script") updateItem(id, { script_notes: val }, true);
+        else updateItem(id, { notes: val }, true);
+      }, 600);
     });
   });
   main.querySelectorAll(".delete-btn").forEach(btn => {
@@ -725,6 +740,27 @@ function renderList(){
       const id = Number(btn.getAttribute("data-id"));
       deleteItem(id);
     });
+  });
+  main.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.getAttribute("data-id"));
+      openEditModal(id);
+    });
+  });
+
+  openTextareas.forEach(key => {
+    const [type, id] = key.split("-");
+    const ta = document.getElementById((type === "script" ? "script-" : "notes-") + id);
+    const lbl = document.getElementById("script-label-" + id);
+    if (ta) {
+      ta.classList.add("open");
+      if (lbl) lbl.classList.add("open");
+      const pos = lastCaretPos[key];
+      if (pos !== undefined) {
+        ta.focus();
+        ta.setSelectionRange(pos, pos);
+      }
+    }
   });
 }
 
@@ -734,8 +770,18 @@ function renderItem(item){
   const isSaving = !!savingIds[item.id];
   const hasNote = !!st.notes;
   const hasScript = !!st.script_notes;
-  const deleteBtn = isOwner ? 
-    `<button class="delete-btn" data-id="${item.id}" title="حذف الفكرة">🗑️</button>` : '';
+  const ov = overrides[item.id];
+  const wasEdited = ov && (ov.editedBy || ov.editedAt);
+  const editedText = wasEdited
+    ? `آخر تعديل: ${esc(ov.editedBy || "")}${ov.editedAt ? " — " + new Date(ov.editedAt).toLocaleString("ar-EG") : ""}`
+    : "";
+
+  const editBtn = isOwner
+    ? `<button class="edit-btn" data-id="${item.id}" title="تعديل الفكرة">✏️ تعديل</button>`
+    : "";
+  const deleteBtn = isOwner
+    ? `<button class="delete-btn" data-id="${item.id}" title="حذف الفكرة">🗑️</button>`
+    : "";
 
   return `
     <div class="item">
@@ -743,6 +789,7 @@ function renderItem(item){
         <div class="item-id">#${item.id}</div>
         <div class="item-body">
           <div class="item-idea">${esc(item.idea)}</div>
+          ${editedText ? `<div class="edited-by">${editedText}</div>` : ""}
           <div class="item-meta">
             <span class="fmt-tag">${esc(item.fmt)}</span>
             ${isSaving ? `<span class="saving-tag">يحفظ...</span>` : ""}
@@ -752,6 +799,7 @@ function renderItem(item){
             <button class="notes-toggle${hasScript ? ' has-note':''}" data-id="${item.id}" data-type="script">
               ${hasScript ? "عرض/تعديل السكريبت" : "+ إضافة سكريبت"}
             </button>
+            ${editBtn}
             ${deleteBtn}
           </div>
           <textarea class="notes" id="notes-${item.id}" data-id="${item.id}" data-type="notes"
@@ -782,12 +830,12 @@ function renderAll(){
   renderList();
 }
 
-function updateItem(id, patch){
+function updateItem(id, patch, skipRender){
   const current = getItemState(id);
   const next = { ...current, ...patch };
   state[id] = next;
   savingIds[id] = true;
-  renderAll();
+  if (!skipRender) renderAll();
 
   if (fb) {
     const itemRef = fb.ref(fb.db, "tracker/states/" + id);
@@ -798,31 +846,87 @@ function updateItem(id, patch){
       delete savingIds[id];
       document.getElementById("saveError").style.display = "block";
     }).finally(() => {
-      renderList();
+      if (!skipRender) renderList();
     });
   }
 }
 
-// ====== إضافة وحذف الأفكار (Owner فقط) ======
-function addItem(cat, idea, fmt) {
-  if (!isOwner || !fb) return;
-  const allItems = getAllItems();
-  const maxId = allItems.length > 0 ? Math.max(...allItems.map(i => i.id)) : 0;
-  const newId = maxId + 1;
-  const newItem = { id: newId, cat: cat.trim(), idea: idea.trim(), fmt: fmt.trim() };
+let editingItemId = null;
 
-  const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + newId);
-  fb.set(itemRef, newItem).then(() => {
-    document.getElementById("saveError").style.display = "none";
-    // clear form
-    document.getElementById("newItemCat").value = "";
-    document.getElementById("newItemIdea").value = "";
-    document.getElementById("newItemFmt").value = "";
-    document.getElementById("addItemForm").classList.remove("open");
-  }).catch((err) => {
-    document.getElementById("saveError").style.display = "block";
-    console.error("Add item error:", err);
-  });
+function openAddModal() {
+  editingItemId = null;
+  document.getElementById("modalTitle").textContent = "إضافة فكرة جديدة";
+  document.getElementById("modalCat").value = "";
+  document.getElementById("modalIdea").value = "";
+  document.getElementById("modalFmt").value = "";
+  document.getElementById("itemModal").classList.add("open");
+}
+
+function openEditModal(id) {
+  const allItems = getAllItems();
+  const item = allItems.find(i => i.id === id);
+  if (!item) return;
+  editingItemId = id;
+  document.getElementById("modalTitle").textContent = "تعديل الفكرة #" + id;
+  document.getElementById("modalCat").value = item.cat;
+  document.getElementById("modalIdea").value = item.idea;
+  document.getElementById("modalFmt").value = item.fmt;
+  document.getElementById("itemModal").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("itemModal").classList.remove("open");
+  editingItemId = null;
+}
+
+function saveModalItem() {
+  if (!isOwner || !fb) return;
+  const cat = document.getElementById("modalCat").value.trim();
+  const idea = document.getElementById("modalIdea").value.trim();
+  const fmt = document.getElementById("modalFmt").value.trim();
+  if (!cat || !idea || !fmt) {
+    alert("يرجى ملء جميع الحقول");
+    return;
+  }
+
+  const editorName = currentUser ? (currentUser.displayName || currentUser.email || "Owner") : "Owner";
+  const now = Date.now();
+
+  if (editingItemId) {
+    const isDynamic = dynamicItems.some(i => i.id === editingItemId);
+    if (isDynamic) {
+      const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + editingItemId);
+      fb.update(itemRef, { cat, idea, fmt, editedBy: editorName, editedAt: now }).then(() => {
+        document.getElementById("saveError").style.display = "none";
+        closeModal();
+      }).catch(err => {
+        document.getElementById("saveError").style.display = "block";
+        console.error("Edit dynamic error:", err);
+      });
+    } else {
+      const ovRef = fb.ref(fb.db, "tracker/overrides/" + editingItemId);
+      fb.update(ovRef, { cat, idea, fmt, editedBy: editorName, editedAt: now }).then(() => {
+        document.getElementById("saveError").style.display = "none";
+        closeModal();
+      }).catch(err => {
+        document.getElementById("saveError").style.display = "block";
+        console.error("Edit override error:", err);
+      });
+    }
+  } else {
+    const allItems = getAllItems();
+    const maxId = allItems.length > 0 ? Math.max(...allItems.map(i => i.id)) : 0;
+    const newId = maxId + 1;
+    const newItem = { id: newId, cat, idea, fmt, editedBy: editorName, editedAt: now };
+    const itemRef = fb.ref(fb.db, "tracker/dynamicItems/" + newId);
+    fb.set(itemRef, newItem).then(() => {
+      document.getElementById("saveError").style.display = "none";
+      closeModal();
+    }).catch(err => {
+      document.getElementById("saveError").style.display = "block";
+      console.error("Add item error:", err);
+    });
+  }
 }
 
 function deleteItem(id) {
@@ -838,9 +942,11 @@ function deleteItem(id) {
     fb.set(delRef, true).catch(err => console.error("Delete static error:", err));
   }
 
-  // clean up state
   const stateRef = fb.ref(fb.db, "tracker/states/" + id);
   fb.remove(stateRef).catch(err => console.error("Delete state error:", err));
+
+  const ovRef = fb.ref(fb.db, "tracker/overrides/" + id);
+  fb.remove(ovRef).catch(err => console.error("Delete override error:", err));
 }
 
 document.getElementById("searchInput").addEventListener("input", (e) => {
@@ -848,22 +954,11 @@ document.getElementById("searchInput").addEventListener("input", (e) => {
   renderAll();
 });
 
-// ====== Owner UI ======
-document.getElementById("showAddForm").addEventListener("click", () => {
-  document.getElementById("addItemForm").classList.toggle("open");
-});
-document.getElementById("cancelAddItem").addEventListener("click", () => {
-  document.getElementById("addItemForm").classList.remove("open");
-});
-document.getElementById("saveNewItem").addEventListener("click", () => {
-  const cat = document.getElementById("newItemCat").value.trim();
-  const idea = document.getElementById("newItemIdea").value.trim();
-  const fmt = document.getElementById("newItemFmt").value.trim();
-  if (!cat || !idea || !fmt) {
-    alert("يرجى ملء جميع الحقول");
-    return;
-  }
-  addItem(cat, idea, fmt);
+document.getElementById("showAddForm").addEventListener("click", openAddModal);
+document.getElementById("modalCancel").addEventListener("click", closeModal);
+document.getElementById("modalSave").addEventListener("click", saveModalItem);
+document.getElementById("itemModal").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("itemModal")) closeModal();
 });
 
 function showLogin(){
@@ -876,34 +971,31 @@ function attachDbListener(){
   if (dbListenerAttached) return;
   dbListenerAttached = true;
 
-  // تحميل الحالات
   const statesRef = fb.ref(fb.db, "tracker/states");
   fb.onValue(statesRef, (snapshot) => {
     state = snapshot.val() || {};
     renderAll();
-  }, (err) => {
-    console.error("States listener error:", err);
-  });
+  }, (err) => { console.error("States listener error:", err); });
 
-  // تحميل الأفكار الديناميكية
   const dynRef = fb.ref(fb.db, "tracker/dynamicItems");
   fb.onValue(dynRef, (snapshot) => {
     const data = snapshot.val() || {};
     dynamicItems = Object.values(data);
     renderAll();
-  }, (err) => {
-    console.error("Dynamic items listener error:", err);
-  });
+  }, (err) => { console.error("Dynamic items listener error:", err); });
 
-  // تحميل المحذوفة
   const delRef = fb.ref(fb.db, "tracker/deletedIds");
   fb.onValue(delRef, (snapshot) => {
     const data = snapshot.val() || {};
     deletedIds = new Set(Object.keys(data).map(Number));
     renderAll();
-  }, (err) => {
-    console.error("Deleted ids listener error:", err);
-  });
+  }, (err) => { console.error("Deleted ids listener error:", err); });
+
+  const ovRef = fb.ref(fb.db, "tracker/overrides");
+  fb.onValue(ovRef, (snapshot) => {
+    overrides = snapshot.val() || {};
+    renderAll();
+  }, (err) => { console.error("Overrides listener error:", err); });
 
   document.getElementById("connStatus").innerHTML =
     '<span class="dot ok"></span><span>متصل — التحديثات تُحفظ وتظهر لحظيًا للجميع</span>';
@@ -911,10 +1003,12 @@ function attachDbListener(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 
-  // Show owner UI if applicable
   if (isOwner) {
     document.getElementById("ownerBar").style.display = "flex";
-    document.getElementById("ownerBadge").style.display = "block";
+  }
+  if (currentUser) {
+    const name = currentUser.displayName || currentUser.email || "مستخدم";
+    document.getElementById("userBadge").textContent = "👤 " + name + (isOwner ? " (Owner)" : "");
   }
 }
 
