@@ -283,9 +283,6 @@
       دخول
     </button>
     <div id="loginError" style="display:none;margin-top:12px;font-size:12.5px;color:#fca5a5;"></div>
-    <div style="margin-top:16px;font-size:11px;color:var(--faint);">
-      لو معندكش حساب، اطلبه من مسؤول المظلة عن المشروع.
-    </div>
   </div>
 </div>
 
@@ -719,6 +716,13 @@ function getCustomItemsArr(){
 
 function getAllItems(){
   return getBaseItems().concat(getCustomItemsArr());
+}
+
+function getNextId(){
+  let maxId = 0;
+  ITEMS.forEach(item => { if (item.id > maxId) maxId = item.id; });
+  Object.keys(customItems).forEach(id => { const n = Number(id); if (n > maxId) maxId = n; });
+  return maxId + 1;
 }
 
 function isCustomId(id){
@@ -1175,7 +1179,7 @@ document.getElementById("ideaSubmitBtn").addEventListener("click", () => {
 
   let opPromise;
   if (ideaFormMode === "add") {
-    const newId = Date.now();
+    const newId = getNextId();
     opPromise = fb.set(fb.ref(fb.db, "customItems/" + newId), { cat, idea, fmt });
   } else if (ideaFormMode === "edit" && editingId != null) {
     if (isCustomId(editingId)) {
