@@ -102,6 +102,10 @@
     width:36px;height:36px;display:flex;align-items:center;justify-content:center;
     cursor:pointer;color:var(--muted);transition:all .15s;}
   .icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .jump-btn{background:var(--panel);border:1px solid var(--border);border-radius:10px;color:var(--muted);
+    padding:8px 14px;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    font-family:inherit;}
+  .jump-btn:hover{border-color:var(--accent);color:var(--accent);}
 
   .save-error{margin-top:10px;background:var(--danger-bg);border:1px solid #7f1d1d;color:#fca5a5;
     border-radius:8px;padding:8px 12px;font-size:12.5px;display:none;}
@@ -310,6 +314,9 @@
       <div class="progress-bar" id="progressBar"></div>
       <div class="legend" id="legend"></div>
       <div class="conn-status" id="connStatus"><span class="dot"></span><span>جارِ الاتصال بقاعدة البيانات...</span></div>
+      <button id="jumpToBottomBtn" type="button" class="jump-btn" style="margin-top:12px;">
+        <span>الانتقال لآخر الصفحة</span><span>↓</span>
+      </button>
     </div>
   </header>
 
@@ -369,6 +376,11 @@
 
   <footer>
     التحديثات تُحفظ تلقائيًا وتظهر لحظيًا لكل من يفتح هذه الصفحة.
+    <div style="margin-top:12px;">
+      <button id="jumpToTopBtn" type="button" class="jump-btn">
+        <span>↑</span><span>الرجوع لأعلى الصفحة</span>
+      </button>
+    </div>
   </footer>
 </div>
 
@@ -693,6 +705,12 @@ function esc(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// يشيل الرقم الترتيبي (عربي أو إنجليزي) من بداية اسم المحور عند العرض فقط،
+// مع الإبقاء على النص الأصلي كامل (بالرقم) كقيمة فعلية للفلترة والتخزين.
+function stripCatNumber(cat){
+  return String(cat).replace(/^[\u0660-\u0669\d]+\s*[.\-)]\s*/, "").trim();
+}
+
 function getBaseItems(){
   return ITEMS
     .filter(item => !deletedItems[item.id])
@@ -816,6 +834,13 @@ document.getElementById("themeToggle").addEventListener("click", () => {
   applyTheme(isLight ? "dark" : "light");
 });
 
+document.getElementById("jumpToBottomBtn").addEventListener("click", () => {
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+});
+document.getElementById("jumpToTopBtn").addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
 /* ============================================================
    عناصر الواجهة العامة
    ============================================================ */
@@ -865,7 +890,7 @@ function renderFilters(){
   const catSel = document.getElementById("catFilter");
   const prevCat = catSel.value || catFilter;
   catSel.innerHTML = `<option value="الكل">كل المحاور (${cats.length})</option>` +
-    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    cats.map(c => `<option value="${esc(c)}">${esc(stripCatNumber(c))}</option>`).join("");
   catSel.value = cats.includes(prevCat) ? prevCat : "الكل";
   if (!catSel.dataset.wired) {
     catSel.dataset.wired = "1";
@@ -968,7 +993,7 @@ function renderList(){
 
   main.innerHTML = orderedGroups.map(([cat, items]) => `
     <div class="cat-group">
-      <div class="cat-title"><span class="bar"></span>${esc(cat)} <span class="count">(${items.length})</span></div>
+      <div class="cat-title"><span class="bar"></span>${esc(stripCatNumber(cat))} <span class="count">(${items.length})</span></div>
       <div class="items">
         ${items.map(item => renderItem(item)).join("")}
       </div>
@@ -1108,7 +1133,7 @@ function renderIdeaFormOptions(currentCat, currentFmt){
   const cats = getCategories();
   const fmts = getFormats();
 
-  catSel.innerHTML = cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
+  catSel.innerHTML = cats.map(c => `<option value="${esc(c)}">${esc(stripCatNumber(c))}</option>`).join("") +
     `<option value="${NEW_CAT_VALUE}">+ محور جديد...</option>`;
   if (currentCat && cats.includes(currentCat)) catSel.value = currentCat;
 
@@ -1271,7 +1296,7 @@ function renderBulkBar(){
   const cats = getCategories();
   const prevCat = catSel.value;
   catSel.innerHTML = `<option value="">بدون تغيير المحور</option>` +
-    cats.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("") +
+    cats.map(c => `<option value="${esc(c)}">${esc(stripCatNumber(c))}</option>`).join("") +
     `<option value="${NEW_CAT_VALUE}">+ محور جديد...</option>`;
   catSel.value = prevCat || "";
 
