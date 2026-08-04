@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
 
 <!-- ============================================================
      إعدادات Firebase — بيانات مشروع almizalla-tracker
@@ -42,6 +42,8 @@
     --accent:#c98a3e; --accent2:#e0a85e; --danger:#ef4444; --danger-bg:#3b1d1d;
     --shadow: 0 6px 20px rgba(0,0,0,.28);
     --radius: 14px;
+    --font-heading:'Tajawal', Tahoma, Geneva, Arial, sans-serif;
+    --font-body:Tahoma, 'Segoe UI', Geneva, Arial, sans-serif;
   }
   html[data-theme="light"]{
     --bg:#f4f5f7; --panel:#ffffff; --panel2:#f8f9fb; --border:#e5e7eb;
@@ -51,10 +53,12 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-    font-family:'Tajawal', Tahoma, Geneva, Arial, sans-serif;
+    font-family:var(--font-body);
     transition:background .2s, color .2s;}
   a{color:inherit;}
-  button, select, input, textarea { font-family:'Tajawal', Tahoma, Arial, sans-serif; }
+  button, select, input, textarea { font-family:var(--font-body); }
+  h1,h2,h3,.eyebrow,.cat-title,.idea-form-title,#addIdeaBtn,.idea-form-submit,.bulk-apply,
+  .pct,.status-btn,.chip,.item-id{ font-family:var(--font-heading); }
   ::selection{background:var(--accent);color:#1b1204;}
 
   body.locked-select{ -webkit-user-select:none; user-select:none; }
@@ -145,6 +149,7 @@
   .status-btn svg{flex-shrink:0;}
   .status-btn.active{font-weight:700;}
   .status-btn:hover{border-color:var(--border);}
+  .status-short{display:none;}
 
   .empty{text-align:center;color:var(--dim);padding:60px 0;font-size:14px;}
   .loading{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px;}
@@ -188,8 +193,56 @@
     color:var(--dim);font-size:12.5px;cursor:pointer;}
 
   @media (max-width:560px){
+    .wrap{padding:0 12px;}
+    header.top{padding:14px 0 10px;}
+    .eyebrow{font-size:10px;}
+    h1{font-size:17px;}
+    .pct{font-size:20px;}
+    .pct-label{font-size:9.5px;}
+    .progress-bar{margin-top:10px;height:6px;}
+
+    /* الحالات: صف واحد قابل للتمرير أفقيًا بدل عدة أسطر */
+    .legend{flex-wrap:nowrap;overflow-x:auto;gap:6px;margin-top:8px;padding-bottom:4px;
+      -ms-overflow-style:none;scrollbar-width:none;}
+    .legend::-webkit-scrollbar{display:none;}
+    .chip{flex-shrink:0;padding:4px 9px;font-size:11px;}
+    .clear-filter{flex-shrink:0;}
+
+    .conn-status{font-size:9.5px;margin-top:6px;}
+
+    /* الفلاتر: صف بحث كامل العرض، ثم المحور/الصيغة جنبًا لجنب وأصغر */
+    .filters{margin-top:10px;gap:6px;}
+    .search-box{flex:1 1 100%;order:1;}
+    #catFilter{order:2;flex:1 1 0;min-width:0;}
+    #fmtFilter{order:3;flex:1 1 0;min-width:0;}
+    select{padding:7px 8px;font-size:12px;min-width:0;}
+    #addIdeaBtn{order:4;flex:1 1 100%;}
+    #selectAllWrap{order:5;flex:1 1 100%;justify-content:center;}
+    .result-count{order:6;flex:1 1 100%;text-align:center;margin:0;}
+
+    /* عنوان المحور داخل القائمة: أصغر وأخف */
+    .cat-group{margin-bottom:14px;}
+    .cat-title{font-size:10.5px;margin-bottom:5px;gap:5px;}
+    .cat-title .bar{height:11px;}
+
+    /* الفكرة نفسها تاخد أكبر مساحة ممكنة */
+    .items{gap:6px;}
+    .item{padding:9px 10px;}
+    .item-idea{font-size:14px;line-height:1.6;}
+    .item-id{font-size:9.5px;min-width:18px;}
+    .fmt-tag{font-size:9px;padding:1px 6px;}
+    .notes-toggle, .script-toggle, .edit-toggle, .delete-toggle{font-size:9.5px;}
+    .item-meta{gap:6px;margin-top:5px;}
+
+    /* حالة الفكرة: صف أفقي مضغوط بعلامة مختصرة بدل الاسم الكامل */
     .item-row{flex-wrap:wrap;}
-    .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:6px;}
+    .status-col{flex-direction:row;flex-wrap:wrap;min-width:0;width:100%;order:3;margin-top:5px;gap:3px;}
+    .status-btn{padding:3px 6px;font-size:9.5px;gap:3px;flex:0 0 auto;}
+    .status-full{display:none;}
+    .status-short{display:inline;}
+
+    .bulk-bar{padding:9px 10px;}
+    .bulk-bar select{min-width:0;flex:1 1 40%;font-size:11.5px;}
   }
 </style>
 </head>
@@ -272,6 +325,10 @@
       <select id="catFilter"></select>
       <select id="fmtFilter"></select>
       <button id="addIdeaBtn" type="button" style="display:none;">+ إضافة فكرة جديدة</button>
+      <label id="selectAllWrap" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="selectAllCheckbox" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;" />
+        تحديد كل الظاهر
+      </label>
       <div class="result-count" id="resultCount"></div>
     </div>
     <div class="save-error" id="saveError">تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى.</div>
@@ -822,6 +879,29 @@ function renderFilters(){
   }
 
   document.getElementById("addIdeaBtn").style.display = isOwner ? "inline-flex" : "none";
+
+  const selectAllWrap = document.getElementById("selectAllWrap");
+  const selectAllCb = document.getElementById("selectAllCheckbox");
+  selectAllWrap.style.display = isOwner ? "inline-flex" : "none";
+  if (isOwner) {
+    const filteredIds = getFiltered().map(i => i.id);
+    const allSelected = filteredIds.length > 0 && filteredIds.every(id => selectedIds.has(id));
+    const someSelected = filteredIds.some(id => selectedIds.has(id));
+    selectAllCb.checked = allSelected;
+    selectAllCb.indeterminate = !allSelected && someSelected;
+    if (!selectAllCb.dataset.wired) {
+      selectAllCb.dataset.wired = "1";
+      selectAllCb.addEventListener("change", () => {
+        const ids = getFiltered().map(i => i.id);
+        if (selectAllCb.checked) {
+          ids.forEach(id => selectedIds.add(id));
+        } else {
+          ids.forEach(id => selectedIds.delete(id));
+        }
+        renderAll();
+      });
+    }
+  }
 }
 
 function getFiltered(){
@@ -973,10 +1053,10 @@ function renderItem(item){
           ${STATUSES.map(s => {
             const m = STATUS_META[s];
             const active = st.status === s;
-            return `<button class="status-btn${active ? ' active':''}" data-id="${item.id}" data-status="${esc(s)}"
+            return `<button class="status-btn${active ? ' active':''}" data-id="${item.id}" data-status="${esc(s)}" title="${esc(s)}"
               style="${active ? `background:${m.bg};border-color:${m.bg};color:${m.color};` : ''}">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.icon}</svg>
-              ${esc(s)}
+              <span class="status-full">${esc(s)}</span><span class="status-short">${esc(m.short)}</span>
             </button>`;
           }).join("")}
         </div>
