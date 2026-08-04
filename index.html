@@ -926,20 +926,47 @@ function renderList(){
   const filtered = getFiltered();
   document.getElementById("resultCount").textContent = filtered.length + " نتيجة";
 
-  const grouped = {};
-  filtered.forEach(item => {
-    if (!grouped[item.cat]) grouped[item.cat] = [];
-    grouped[item.cat].push(item);
-  });
-
   const main = document.getElementById("mainList");
 
-  if (Object.keys(grouped).length === 0) {
+  if (filtered.length === 0) {
     main.innerHTML = `<div class="empty">لا توجد نتائج مطابقة لبحثك</div>`;
     return;
   }
 
-  main.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+  let orderedGroups;
+
+  if (catFilter === "الكل") {
+    // عرض كل المحاور: العناصر الأصلية بترتيبها الطبيعي حسب المحور،
+    // والأفكار الجديدة المضافة تتحط في مجموعة منفصلة آخر الصفحة بغض النظر عن محورها.
+    const baseGrouped = {};
+    filtered.filter(item => !item.__custom).forEach(item => {
+      if (!baseGrouped[item.cat]) baseGrouped[item.cat] = [];
+      baseGrouped[item.cat].push(item);
+    });
+    Object.keys(baseGrouped).forEach(cat => baseGrouped[cat].sort((a, b) => a.id - b.id));
+    orderedGroups = Object.entries(baseGrouped);
+
+    const customItemsList = filtered.filter(item => item.__custom).sort((a, b) => a.id - b.id);
+    if (customItemsList.length) {
+      const customGrouped = {};
+      customItemsList.forEach(item => {
+        if (!customGrouped[item.cat]) customGrouped[item.cat] = [];
+        customGrouped[item.cat].push(item);
+      });
+      orderedGroups = orderedGroups.concat(Object.entries(customGrouped));
+    }
+  } else {
+    // عند تحديد محور معين من الفلتر: الأفكار (القديمة والجديدة) تندمج وترتب برقمها داخل نفس المحور.
+    const grouped = {};
+    filtered.forEach(item => {
+      if (!grouped[item.cat]) grouped[item.cat] = [];
+      grouped[item.cat].push(item);
+    });
+    Object.keys(grouped).forEach(cat => grouped[cat].sort((a, b) => a.id - b.id));
+    orderedGroups = Object.entries(grouped);
+  }
+
+  main.innerHTML = orderedGroups.map(([cat, items]) => `
     <div class="cat-group">
       <div class="cat-title"><span class="bar"></span>${esc(cat)} <span class="count">(${items.length})</span></div>
       <div class="items">
