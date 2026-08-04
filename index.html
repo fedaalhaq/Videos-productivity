@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src https://almizalla-tracker-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com; img-src 'self' data: blob:;" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src https://almizalla-tracker-default-rtdb.firebaseio.com wss://almizalla-tracker-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://*.googleapis.com; img-src 'self' data: blob:;" />
 <title>جدول متابعة إنتاج الأفكار — مظلة معتقلي مصر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -163,7 +163,14 @@ footer{max-width:1100px;margin:40px auto 0;padding:0 24px 40px;font-size:12px;co
   window.addEventListener("error", function(e){
     var hint = document.getElementById("loadingHint");
     if (hint && document.getElementById("loading").style.display !== "none") {
-      hint.textContent = "خطأ تقني: " + (e.message || "تعذّر تحميل أحد الملفات الخارجية (Firebase)") + " — جرّب فتح الصفحة على بلوجر مباشرة.";
+      var detail;
+      if (e.target && e.target !== window && e.target.tagName) {
+        var src = e.target.src || e.target.href || "";
+        detail = "تعذّر تحميل ملف (" + e.target.tagName.toLowerCase() + "): " + src;
+      } else {
+        detail = e.message || "خطأ غير معروف";
+      }
+      hint.textContent = "خطأ تقني: " + detail + " — تأكد من قوة الاتصال بالإنترنت وأعد تحميل الصفحة.";
     }
   }, true);
 </script>
